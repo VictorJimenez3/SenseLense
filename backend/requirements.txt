@@ -14,7 +14,7 @@ tf-keras>=2.18.0
 elevenlabs==2.36.1
 
 # ── Audio ──────────────────────────────────────────────────
-PyAudio==0.2.14
+# PyAudio is local only (microphone required)
 
 # ── Utilities ──────────────────────────────────────────────
 python-dotenv==1.2.1

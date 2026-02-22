@@ -1,10 +1,17 @@
-import pyaudio
+try:
+    import pyaudio
+except ImportError:
+    pyaudio = None
 import wave
 
 def record_wav(path, seconds=10, sample_rate=16000, channels=1, chunk_size=1024):
     """
     Records audio from the default input device and saves it to a WAV file.
     """
+    if pyaudio is None:
+        print("[!] PyAudio is not installed or no audio device found. Skipping recording.")
+        return
+
     p = pyaudio.PyAudio()
     
     try:
