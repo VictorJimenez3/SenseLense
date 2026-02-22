@@ -1,4 +1,26 @@
-flask
-flask-cors
-flask-sqlalchemy
-python-dotenv
+# Core Flask
+Flask==3.0.3
+Flask-Cors==4.0.1
+Flask-SQLAlchemy==3.1.1
+python-dotenv==1.0.1
+Werkzeug==3.1.6
+
+# ElevenLabs transcription
+elevenlabs==2.36.1
+httpx==0.28.1
+websockets==15.0.1
+
+# DeepFace emotion detection
+deepface==0.0.98
+tensorflow==2.20.0
+tf_keras==2.20.1
+opencv-python-headless==4.13.0.92
+numpy==2.0.2
+pandas==2.3.3
+pillow==11.3.0
+retina-face==0.0.17
+mtcnn==0.1.1
+
+# Misc utilities
+requests==2.32.5
+gunicorn==23.0.0
