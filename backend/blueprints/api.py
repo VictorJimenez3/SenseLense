@@ -309,6 +309,14 @@ def end_session(session_id):
     return jsonify(session.to_dict())
 
 
+@api_bp.delete("/sessions/<int:session_id>")
+def delete_session(session_id):
+    session = Session.query.get_or_404(session_id)
+    db.session.delete(session)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 # ── Events (Timeline Ingestion) ───────────────────────────────────────────────
 
 @api_bp.post("/sessions/<int:session_id>/events")

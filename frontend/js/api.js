@@ -34,6 +34,7 @@
         createSession: (data) => request("POST", "/sessions", data),
         getSession: (id, events = false) => request("GET", `/sessions/${id}?events=${events}`),
         endSession: (id, data) => request("PATCH", `/sessions/${id}/end`, data),
+        deleteSession: (id) => request("DELETE", `/sessions/${id}`),
         generateSummary: (id) => request("POST", `/sessions/${id}/summary/generate`),
         startRecording: (data) => request("POST", "/record", data),
 
