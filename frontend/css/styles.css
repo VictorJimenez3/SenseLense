@@ -146,6 +146,12 @@ ol {
     width: auto;
 }
 
+/* ADP logo inherits accent color when inlined as SVG */
+.sidebar__logo svg path {
+    fill: var(--red);
+    transition: fill 0.2s ease;
+}
+
 .sidebar__tagline {
     font-size: 10px;
     font-weight: 600;
@@ -1125,4 +1131,197 @@ textarea.form-input {
     .stats-grid {
         grid-template-columns: 1fr 1fr;
     }
+}
+
+/* ============================================================
+   Light Mode Theme  (toggled via [data-theme="light"] on <html>)
+   ============================================================ */
+[data-theme="light"] {
+    --surface-0: #F5F5F5;
+    --surface-1: #FFFFFF;
+    --surface-2: #F0F0F0;
+    --surface-3: #E8E8E8;
+    --surface-4: #D8D8D8;
+
+    --text-primary: #111111;
+    --text-secondary: #444444;
+    --text-muted: #888888;
+
+    --border: rgba(0, 0, 0, 0.09);
+    --border-red: rgba(204, 0, 0, 0.35);
+
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.10);
+    --shadow-glow: 0 0 32px rgba(204, 0, 0, 0.15);
+}
+
+/* ── Theme Toggle Button ─────────────────────────────────────── */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: none;
+    border: none;
+    font-family: inherit;
+    text-align: left;
+}
+
+.theme-toggle:hover {
+    background: var(--surface-3);
+    color: var(--text-primary);
+}
+
+.theme-toggle .toggle-track {
+    width: 32px;
+    height: 18px;
+    border-radius: 99px;
+    background: var(--surface-4);
+    position: relative;
+    flex-shrink: 0;
+    transition: background var(--transition);
+    margin-left: auto;
+}
+
+.theme-toggle .toggle-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    transition: transform var(--transition), background var(--transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .theme-toggle .toggle-track {
+    background: var(--red);
+}
+
+[data-theme="light"] .theme-toggle .toggle-thumb {
+    transform: translateX(14px);
+}
+
+/* ── Settings Page ───────────────────────────────────────────── */
+.settings-section {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.settings-section__header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-section__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: rgba(204, 0, 0, 0.12);
+    color: var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.settings-section__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.settings-section__sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    gap: 24px;
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.settings-row__desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.settings-row input[type="text"],
+.settings-row input[type="password"],
+.settings-row input[type="url"] {
+    width: 280px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color var(--transition);
+}
+
+.settings-row input:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px var(--red-glow);
+}
+
+.settings-row input::placeholder {
+    color: var(--text-muted);
+}
+
+/* pill toggle within settings row */
+.pill-toggle {
+    display: flex;
+    background: var(--surface-3);
+    border-radius: 99px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.pill-toggle button {
+    padding: 5px 14px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all var(--transition);
+    border: none;
+    cursor: pointer;
+    background: none;
+    font-family: inherit;
+}
+
+.pill-toggle button.active {
+    background: var(--red);
+    color: #fff;
 }
