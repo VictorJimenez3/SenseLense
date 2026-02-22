@@ -25,6 +25,8 @@
     })();
   </script>
 <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
 </head>
 
 <body>
@@ -149,9 +151,9 @@
     <script>
   function toggleTheme(){var t=localStorage.getItem('sl-theme')||'dark';var n=t==='dark'?'light':'dark';localStorage.setItem('sl-theme',n);document.documentElement.setAttribute('data-theme',n==='light'?'light':'');var l=document.getElementById('theme-label');if(l)l.textContent=n==='light'?'Dark Mode':'Light Mode';}
 </script>
-<script type="module">
-document.getElementById("theme-label").textContent = currentTheme()==='light'?'Dark Mode':'Light Mode'; };
-        import { api } from "./js/api.js";
+<script>
+
+        const api = window.api;
         import { toast, fmtDate, sentimentLabel } from "./js/utils.js";
 
         let allSessions = [];
