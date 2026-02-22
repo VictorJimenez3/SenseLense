@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SenseLense — Clients</title>
+    <meta name="description" content="Manage and view all ADP sales clients and their meeting history." />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+    <div class="app-shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar__logo">
+                <img src="assets/adp-logo.svg" alt="ADP" />
+                <div class="sidebar__tagline">SenseLense</div>
+            </div>
+            <nav class="sidebar__nav">
+                <div class="nav-section-label">Main</div>
+                <a class="nav-item" href="index.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a class="nav-item active" href="clients.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Clients
+                </a>
+                <a class="nav-item" href="sessions.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    Sessions
+                </a>
+                <div class="nav-section-label">Actions</div>
+                <a class="nav-item" href="record.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    </svg>
+                    New Session
+                </a>
+            </nav>
+            <div class="sidebar__footer">
+                <div class="status-badge">
+                    <div class="status-dot online" id="api-status-dot"></div>
+                    <span id="api-status-text">Backend</span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div>
+                    <div class="topbar__title">Clients</div>
+                    <div class="topbar__sub">All your contacts in one place</div>
+                </div>
+                <div class="topbar__actions">
+                    <div class="search-wrap">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <input type="text" id="client-search" placeholder="Search clients…" />
+                    </div>
+                    <button class="btn btn-primary" id="add-client-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Add Client
+                    </button>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <div class="card" style="padding:0;overflow:hidden">
+                    <div id="clients-table-wrap">
+                        <div class="empty-state" style="padding:80px 20px">
+                            <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                            </svg>
+                            <h3>No clients yet</h3>
+                            <p>Add your first client to start tracking conversations.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Client Modal -->
+    <div class="modal-overlay" id="add-client-modal" style="position:fixed">
+        <div class="modal" style="position:relative">
+            <h2>Add New Client</h2>
+            <button class="modal__close" id="modal-close-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+            <form id="add-client-form">
+                <div class="form-group">
+                    <label class="form-label" for="client-name">Full Name *</label>
+                    <input class="form-input" type="text" id="client-name" name="name" placeholder="Jane Smith"
+                        required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="client-company">Company</label>
+                    <input class="form-input" type="text" id="client-company" name="company" placeholder="Acme Corp" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="client-email">Email</label>
+                    <input class="form-input" type="email" id="client-email" name="email" placeholder="jane@acme.com" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="client-notes">Notes</label>
+                    <textarea class="form-input" id="client-notes" name="notes"
+                        placeholder="Key info about this client…"></textarea>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+                    <button type="button" class="btn btn-outline" id="cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-client-btn">Save Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { api } from "./js/api.js";
+        import { toast, initials, fmtDateShort, sentimentLabel, openModal, closeModal } from "./js/utils.js";
+
+        let allClients = [];
+
+        async function loadClients() {
+            try {
+                allClients = await api.getClients();
+                renderTable(allClients);
+            } catch {
+                toast("Failed to load clients", "error");
+            }
+        }
+
+        function renderTable(clients) {
+            const wrap = document.getElementById("clients-table-wrap");
+            if (!clients.length) {
+                wrap.innerHTML = `<div class="empty-state" style="padding:80px 20px">
+      <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <h3>No clients found</h3><p>Try a different search term.</p>
+    </div>`;
+                return;
+            }
+            wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>Name</th><th>Company</th><th>Email</th><th>Sessions</th><th>Added</th>
+    </tr></thead>
+    <tbody>
+      ${clients.map(c => `<tr onclick="location='client.html?id=${c.id}'" style="cursor:pointer">
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar sm">${initials(c.name)}</div>
+            ${c.name}
+          </div>
+        </td>
+        <td>${c.company || "—"}</td>
+        <td>${c.email || "—"}</td>
+        <td><span class="badge">${c.session_count}</span></td>
+        <td>${fmtDateShort(c.created_at)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+        }
+
+        // Search
+        document.getElementById("client-search").addEventListener("input", e => {
+            const q = e.target.value.toLowerCase();
+            renderTable(allClients.filter(c =>
+                c.name.toLowerCase().includes(q) ||
+                (c.company || "").toLowerCase().includes(q) ||
+                (c.email || "").toLowerCase().includes(q)
+            ));
+        });
+
+        // Modal
+        document.getElementById("add-client-btn").addEventListener("click", () => openModal("add-client-modal"));
+        document.getElementById("modal-close-btn").addEventListener("click", () => closeModal("add-client-modal"));
+        document.getElementById("cancel-btn").addEventListener("click", () => closeModal("add-client-modal"));
+        document.getElementById("add-client-modal").addEventListener("click", e => {
+            if (e.target === e.currentTarget) closeModal("add-client-modal");
+        });
+
+        document.getElementById("add-client-form").addEventListener("submit", async e => {
+            e.preventDefault();
+            const btn = document.getElementById("save-client-btn");
+            btn.disabled = true;
+            btn.textContent = "Saving…";
+            const fd = new FormData(e.target);
+            try {
+                await api.createClient(Object.fromEntries(fd));
+                toast("Client added!", "success");
+                closeModal("add-client-modal");
+                e.target.reset();
+                await loadClients();
+            } catch {
+                toast("Failed to create client", "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Save Client";
+            }
+        });
+
+        loadClients();
+    </script>
+</body>
+
+</html>

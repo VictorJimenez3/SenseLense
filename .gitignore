@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.flaskenv
+
+# Database
+backend/instance/
+*.db
+*.sqlite3
+
+# Frontend/IDE
+.DS_Store
+.next/
+node_modules/
+.vscode/
+.idea/

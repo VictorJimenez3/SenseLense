@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SenseLense — Record Session</title>
+    <meta name="description"
+        content="Capture live conversation with Presage emotion tracking and Wispr transcription." />
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        /* ── Record-page extras ── */
+        .rec-page {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .camera-feed {
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        .camera-feed video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            color: var(--text-muted);
+            background: var(--surface-1);
+        }
+
+        .camera-overlay svg {
+            width: 48px;
+            height: 48px;
+            opacity: 0.3;
+        }
+
+        .camera-badge {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 99px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .camera-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--negative);
+            animation: pulse-dot 1s infinite;
+        }
+
+        .emotion-chip-row {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .live-chip {
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 700;
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .live-chip.active {
+            background: rgba(204, 0, 0, 0.3);
+            border-color: var(--red);
+            color: #fff;
+        }
+
+        .transcript-feed {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .transcript-line {
+            display: flex;
+            gap: 10px;
+            animation: fade-in-up 0.3s ease;
+        }
+
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .transcript-line__speaker {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            white-space: nowrap;
+            padding-top: 2px;
+            min-width: 40px;
+        }
+
+        .transcript-line__text {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .rec-page {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+
+        <aside class="sidebar">
+            <div class="sidebar__logo">
+                <img src="assets/adp-logo.svg" alt="ADP" />
+                <div class="sidebar__tagline">SenseLense</div>
+            </div>
+            <nav class="sidebar__nav">
+                <div class="nav-section-label">Main</div>
+                <a class="nav-item" href="index.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a class="nav-item" href="clients.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                    </svg>
+                    Clients
+                </a>
+                <a class="nav-item" href="sessions.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    Sessions
+                </a>
+                <div class="nav-section-label">Actions</div>
+                <a class="nav-item active" href="record.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    </svg>
+                    New Session
+                </a>
+            </nav>
+            <div class="sidebar__footer">
+                <div class="status-badge">
+                    <div class="status-dot" id="api-dot"></div>
+                    <span id="api-text">Connecting…</span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div>
+                    <div class="topbar__title">New Session</div>
+                    <div class="topbar__sub" id="session-label">Configure below to begin</div>
+                </div>
+                <div class="topbar__actions">
+                    <div class="rec-timer" id="timer"
+                        style="font-size:20px;font-variant-numeric:tabular-nums;font-weight:800;color:var(--text-muted)">
+                        00:00</div>
+                    <button class="btn btn-primary btn-lg" id="rec-btn" style="min-width:150px">
+                        <svg width="14" height="14" id="rec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+                        </svg>
+                        <span id="rec-btn-text">Start Recording</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="page-content">
+
+                <!-- Setup Row (hidden once recording starts) -->
+                <div id="setup-row" style="margin-bottom:24px">
+                    <div class="card">
+                        <div class="card__title" style="margin-bottom:16px">Session Setup</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+                            <div class="form-group" style="margin:0">
+                                <label class="form-label" for="sel-client">Client *</label>
+                                <select class="form-input" id="sel-client">
+                                    <option value="">Select client…</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0">
+                                <label class="form-label" for="sel-title">Session Title</label>
+                                <input class="form-input" type="text" id="sel-title"
+                                    placeholder="e.g. Discovery Call" />
+                            </div>
+                            <div style="display:flex;align-items:flex-end">
+                                <a href="clients.html" class="btn btn-outline"
+                                    style="width:100%;justify-content:center">+ New Client</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rec-page">
+
+                    <!-- LEFT: Camera + Transcript -->
+                    <div style="display:flex;flex-direction:column;gap:20px">
+
+                        <!-- Camera -->
+                        <div class="camera-feed" id="camera-wrap">
+                            <div class="camera-overlay" id="camera-overlay">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M23 7l-7 5 7 5V7z" />
+                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                                </svg>
+                                <span style="font-size:13px">Camera will appear when recording starts</span>
+                            </div>
+                            <video id="camera-video" autoplay muted playsinline style="display:none"></video>
+
+                            <div class="camera-badge" id="rec-badge" style="display:none">
+                                <div class="dot"></div>
+                                LIVE · <span id="badge-timer">00:00</span>
+                            </div>
+
+                            <div class="emotion-chip-row" id="emotion-chips" style="display:none">
+                                <span class="live-chip" id="chip-neutral">Neutral</span>
+                                <span class="live-chip" id="chip-happy">Happy 😊</span>
+                                <span class="live-chip" id="chip-confused">Confused 🤔</span>
+                                <span class="live-chip" id="chip-engaged">Engaged ✨</span>
+                                <span class="live-chip" id="chip-negative">Displeased 😟</span>
+                            </div>
+                        </div>
+
+                        <!-- Transcript Feed -->
+                        <div class="card" style="padding:0;overflow:hidden">
+                            <div
+                                style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+                                <div class="card__title" style="margin:0">Live Transcript</div>
+                                <span class="badge blue" id="transcript-source">Wispr / ElevenLabs</span>
+                            </div>
+                            <div style="padding:16px 20px;min-height:160px" id="transcript-wrap">
+                                <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:40px 0">
+                                    Transcript will appear here during recording…
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT Panel -->
+                    <div class="right-panel">
+
+                        <!-- Controls -->
+                        <div class="rec-panel" id="rec-panel">
+                            <div class="rec-ring" id="rec-ring">
+                                <svg class="rec-icon" id="rec-ring-icon" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+                                </svg>
+                            </div>
+                            <div id="rec-status-text" style="font-size:15px;font-weight:600;color:var(--text-muted)">
+                                Ready to Record</div>
+                            <div style="font-size:12px;color:var(--text-muted);max-width:220px;text-align:center">
+                                Select a client above, then press Start Recording. Presage + Wispr will capture the
+                                session automatically.
+                            </div>
+                        </div>
+
+                        <!-- Live Emotion Breakdown -->
+                        <div class="card">
+                            <div class="card__title" style="margin-bottom:16px">Emotion Tracker</div>
+                            <div id="emotion-tracker">
+                                <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0">
+                                    Will populate during recording
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session notes -->
+                        <div class="card">
+                            <div class="card__title" style="margin-bottom:12px">Quick Notes</div>
+                            <textarea class="form-input" id="quick-notes" rows="4"
+                                placeholder="Jot down context during the call…"></textarea>
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { api } from "./js/api.js";
+        import { toast, fmtTimer } from "./js/utils.js";
+
+        // ── State ──────────────────────────────────────────────────────
+        let recording = false;
+        let sessionId = null;
+        let timerSecs = 0;
+        let timerHandle = null;
+        let videoStream = null;
+
+        // ── Check for passed client_id param ──────────────────────────
+        const params = new URLSearchParams(location.search);
+        const preClient = params.get("client_id");
+
+        // ── API health ─────────────────────────────────────────────────
+        (async () => {
+            try {
+                await api.health();
+                document.getElementById("api-dot").className = "status-dot online";
+                document.getElementById("api-text").textContent = "Backend online";
+            } catch {
+                document.getElementById("api-dot").className = "status-dot";
+                document.getElementById("api-text").textContent = "Backend offline";
+                toast("Backend offline — make sure Flask is running on :5050", "error");
+            }
+        })();
+
+        // ── Load Clients ───────────────────────────────────────────────
+        (async () => {
+            try {
+                const clients = await api.getClients();
+                const sel = document.getElementById("sel-client");
+                clients.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.textContent = `${c.name}${c.company ? " — " + c.company : ""}`;
+                    sel.appendChild(opt);
+                });
+                if (preClient) sel.value = preClient;
+            } catch { }
+        })();
+
+        // ── Timer ──────────────────────────────────────────────────────
+        function startTimer() {
+            timerSecs = 0;
+            timerHandle = setInterval(() => {
+                timerSecs++;
+                const t = fmtTimer(timerSecs);
+                document.getElementById("timer").textContent = t;
+                document.getElementById("badge-timer").textContent = t;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerHandle);
+            document.getElementById("timer").style.color = "var(--text-muted)";
+        }
+
+        // ── Camera ─────────────────────────────────────────────────────
+        async function startCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                const vid = document.getElementById("camera-video");
+                vid.srcObject = videoStream;
+                vid.style.display = "block";
+                document.getElementById("camera-overlay").style.display = "none";
+            } catch {
+                toast("Camera access denied — Presage requires camera access", "error");
+            }
+        }
+
+        function stopCamera() {
+            videoStream?.getTracks().forEach(t => t.stop());
+            const vid = document.getElementById("camera-video");
+            vid.style.display = "none";
+            document.getElementById("camera-overlay").style.display = "flex";
+        }
+
+        // ── Dummy Emotion Animation (replace with real Presage feed) ───
+        const EMOTIONS = ["neutral", "happy", "confused", "engaged", "negative"];
+        const CHIP_IDS = {
+            neutral: "chip-neutral", happy: "chip-happy",
+            confused: "chip-confused", engaged: "chip-engaged", negative: "chip-negative"
+        };
+        const EMOTION_COUNTS = { neutral: 0, happy: 0, confused: 0, engaged: 0, negative: 0 };
+
+        let emotionHandle = null;
+        let currentEmotion = "neutral";
+
+        function startEmotionSim() {
+            document.getElementById("emotion-chips").style.display = "flex";
+            emotionHandle = setInterval(() => {
+                // Simulate Presage output — replace this with real WebSocket/SSE feed
+                const next = EMOTIONS[Math.floor(Math.random() * EMOTIONS.length)];
+                Object.values(CHIP_IDS).forEach(id => document.getElementById(id).classList.remove("active"));
+                document.getElementById(CHIP_IDS[next]).classList.add("active");
+                currentEmotion = next;
+                EMOTION_COUNTS[next]++;
+                renderEmotionTracker();
+            }, 2400);
+        }
+
+        function stopEmotionSim() {
+            clearInterval(emotionHandle);
+        }
+
+        function renderEmotionTracker() {
+            const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0) || 1;
+            const emojis = { neutral: "😐", happy: "😊", confused: "🤔", engaged: "✨", negative: "😟" };
+            const colors = { neutral: "var(--text-muted)", happy: "var(--positive)", confused: "var(--neutral)", engaged: "#60A5FA", negative: "var(--negative)" };
+            document.getElementById("emotion-tracker").innerHTML = Object.entries(EMOTION_COUNTS)
+                .sort((a, b) => b[1] - a[1])
+                .map(([emo, count]) => {
+                    const pct = Math.round((count / total) * 100);
+                    return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="color:var(--text-secondary)">${emojis[emo]} ${emo}</span>
+          <span style="color:${colors[emo]};font-weight:700">${pct}%</span>
+        </div>
+        <div class="sentiment-bar">
+          <div class="sentiment-bar__fill" style="width:${pct}%;background:${colors[emo]}"></div>
+        </div>
+      </div>`;
+                }).join("");
+        }
+
+        // ── Dummy Transcript (replace with Wispr/ElevenLabs SSE) ───────
+        const DEMO_LINES = [
+            { speaker: "REP", text: "Thanks for taking the time today. What's your biggest payroll challenge right now?" },
+            { speaker: "CLIENT", text: "Honestly, the manual reconciliation at end of month. It takes us three days." },
+            { speaker: "REP", text: "Three days — that's significant. Our automation module cuts that to under two hours." },
+            { speaker: "CLIENT", text: "That sounds promising. What does the integration look like?" },
+            { speaker: "REP", text: "It's API-first, so it fits right into your existing ERP. We can have you live in a week." },
+        ];
+        let transcriptIdx = 0;
+        let transcriptHandle = null;
+        const transcriptLines = [];
+
+        function startTranscriptSim() {
+            document.getElementById("transcript-wrap").innerHTML = "";
+            transcriptIdx = 0;
+            transcriptHandle = setInterval(() => {
+                if (transcriptIdx >= DEMO_LINES.length) { transcriptIdx = 0; }
+                const line = DEMO_LINES[transcriptIdx++];
+                transcriptLines.push(line);
+                const wrap = document.getElementById("transcript-wrap");
+                const el = document.createElement("div");
+                el.className = "transcript-line";
+                el.innerHTML = `<div class="transcript-line__speaker" style="color:${line.speaker === "REP" ? "var(--red)" : "#60A5FA"}">${line.speaker}</div>
+      <div class="transcript-line__text">${line.text}</div>`;
+                wrap.appendChild(el);
+                wrap.scrollTop = wrap.scrollHeight;
+            }, 5000);
+        }
+
+        function stopTranscriptSim() { clearInterval(transcriptHandle); }
+
+        // ── Main Record Button ─────────────────────────────────────────
+        document.getElementById("rec-btn").addEventListener("click", async () => {
+            if (!recording) {
+                // ── START ──
+                const clientId = document.getElementById("sel-client").value;
+                if (!clientId) { toast("Please select a client first", "error"); return; }
+
+                const title = document.getElementById("sel-title").value.trim() || "Meeting";
+
+                try {
+                    const sess = await api.createSession({ client_id: parseInt(clientId), title });
+                    sessionId = sess.id;
+                } catch {
+                    toast("Failed to create session — backend running?", "error");
+                    return;
+                }
+
+                recording = true;
+                document.getElementById("setup-row").style.display = "none";
+                document.getElementById("rec-ring").classList.add("active");
+                document.getElementById("rec-badge").style.display = "flex";
+                document.getElementById("rec-btn").className = "btn btn-danger btn-lg";
+                document.getElementById("rec-btn-text").textContent = "End Session";
+                document.getElementById("rec-status-text").textContent = "Recording…";
+                document.getElementById("timer").style.color = "var(--red)";
+                document.getElementById("session-label").textContent = `Session #${sessionId} · ${title}`;
+
+                await startCamera();
+                startTimer();
+                startEmotionSim();
+                startTranscriptSim();
+                toast("Session started!", "success");
+
+            } else {
+                // ── STOP ──
+                recording = false;
+                stopTimer();
+                stopCamera();
+                stopEmotionSim();
+                stopTranscriptSim();
+
+                document.getElementById("rec-ring").classList.remove("active");
+                document.getElementById("rec-badge").style.display = "none";
+                document.getElementById("rec-btn").className = "btn btn-primary btn-lg";
+                document.getElementById("rec-btn-text").textContent = "Start Recording";
+                document.getElementById("rec-status-text").textContent = "Session ended";
+                document.getElementById("emotion-chips").style.display = "none";
+
+                // Compute rough sentiment from emotion counts
+                const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0) || 1;
+                const posScore = ((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged) / total) * 2 - 1;
+                const engagement = Math.round(((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged + EMOTION_COUNTS.neutral * 0.5) / total) * 100);
+
+                try {
+                    await api.endSession(sessionId, {
+                        summary: document.getElementById("quick-notes").value || "Session completed.",
+                        overall_sentiment: parseFloat(posScore.toFixed(2)),
+                        engagement_score: engagement,
+                    });
+                    toast("Session saved!", "success");
+                    setTimeout(() => { location.href = `session.html?id=${sessionId}`; }, 1200);
+                } catch {
+                    toast("Failed to save session data", "error");
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

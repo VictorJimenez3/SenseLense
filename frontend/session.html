@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SenseLense — Session Detail</title>
+    <meta name="description" content="Review session insights, emotion timeline, and full transcript." />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+    <div class="app-shell">
+
+        <aside class="sidebar">
+            <div class="sidebar__logo">
+                <img src="assets/adp-logo.svg" alt="ADP" />
+                <div class="sidebar__tagline">SenseLense</div>
+            </div>
+            <nav class="sidebar__nav">
+                <div class="nav-section-label">Main</div>
+                <a class="nav-item" href="index.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a class="nav-item" href="clients.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                    </svg>
+                    Clients
+                </a>
+                <a class="nav-item active" href="sessions.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    Sessions
+                </a>
+                <div class="nav-section-label">Actions</div>
+                <a class="nav-item" href="record.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    </svg>
+                    New Session
+                </a>
+            </nav>
+            <div class="sidebar__footer">
+                <div class="status-badge">
+                    <div class="status-dot online"></div>
+                    <span>Backend</span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <a href="sessions.html" class="btn btn-ghost btn-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                        </svg>
+                    </a>
+                    <div>
+                        <div class="topbar__title" id="sess-title">Session</div>
+                        <div class="topbar__sub" id="sess-meta"></div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="page-content">
+
+                <!-- Metrics Row -->
+                <div class="stats-grid" style="margin-bottom:24px">
+                    <div class="stat-card">
+                        <div class="stat-card__icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                        </div>
+                        <div class="stat-card__value" id="m-sentiment" style="font-size:20px">—</div>
+                        <div class="stat-card__label">Sentiment</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            </svg>
+                        </div>
+                        <div class="stat-card__value" id="m-engagement">—</div>
+                        <div class="stat-card__label">Engagement</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </div>
+                        <div class="stat-card__value" id="m-transcript">—</div>
+                        <div class="stat-card__label">Transcript Chunks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+                            </svg>
+                        </div>
+                        <div class="stat-card__value" id="m-presage">—</div>
+                        <div class="stat-card__label">Presage Samples</div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="gap:24px;align-items:start">
+
+                    <!-- LEFT: Summary + Insights + Timeline -->
+                    <div style="display:flex;flex-direction:column;gap:20px">
+
+                        <!-- AI Summary -->
+                        <div class="card">
+                            <div class="card__header">
+                                <div>
+                                    <div class="card__title">AI Summary</div>
+                                    <div class="card__sub">Post-session analysis</div>
+                                </div>
+                                <span class="badge blue">Insights</span>
+                            </div>
+                            <p id="sess-summary" style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+                                Loading…</p>
+                        </div>
+
+                        <!-- Key Insights -->
+                        <div class="card">
+                            <div class="card__title" style="margin-bottom:14px">Actionable Insights</div>
+                            <div id="insights-list" style="display:flex;flex-direction:column;gap:10px">
+                                <div style="color:var(--text-muted);font-size:12px">Computed from session data…</div>
+                            </div>
+                        </div>
+
+                        <!-- Emotion breakdown -->
+                        <div class="card">
+                            <div class="card__title" style="margin-bottom:16px">Emotion Breakdown</div>
+                            <div id="emotion-breakdown">
+                                <div style="color:var(--text-muted);font-size:12px">No Presage data yet</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT: Sentiment bar + Timeline -->
+                    <div style="display:flex;flex-direction:column;gap:20px">
+
+                        <div class="card">
+                            <div class="card__title" style="margin-bottom:12px">Overall Sentiment</div>
+                            <div class="sentiment-bar" style="margin-bottom:8px">
+                                <div class="sentiment-bar__fill" id="sent-bar" style="width:50%"></div>
+                            </div>
+                            <div
+                                style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)">
+                                <span>Negative</span><span>Neutral</span><span>Positive</span>
+                            </div>
+                        </div>
+
+                        <!-- Timeline -->
+                        <div class="card">
+                            <div class="card__title" style="margin-bottom:16px">Event Timeline</div>
+                            <div id="timeline-wrap" class="timeline">
+                                <div style="color:var(--text-muted);font-size:12px;padding:16px 0">No events recorded
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { api } from "./js/api.js";
+        import { toast, fmtDate, sentimentLabel, fmtDuration } from "./js/utils.js";
+
+        const sessionId = new URLSearchParams(location.search).get("id");
+        if (!sessionId) { location.href = "sessions.html"; }
+
+        (async () => {
+            try {
+                const [session, insights] = await Promise.all([
+                    api.getSession(sessionId, true),
+                    api.getInsights(sessionId),
+                ]);
+
+                document.title = `SenseLense — ${session.title}`;
+                document.getElementById("sess-title").textContent = session.title;
+                document.getElementById("sess-meta").textContent =
+                    `${fmtDate(session.started_at)} · Session #${session.id}`;
+
+                // Summary
+                document.getElementById("sess-summary").textContent =
+                    session.summary || "No summary available. End the session to generate one.";
+
+                // Metrics
+                const { label, cls } = sentimentLabel(session.overall_sentiment);
+                const sentEl = document.getElementById("m-sentiment");
+                sentEl.textContent = label;
+                sentEl.className = `stat-card__value ${cls === "positive" ? "" : cls === "negative" ? "" : ""}`;
+                sentEl.style.color = cls === "positive" ? "var(--positive)" : cls === "negative" ? "var(--negative)" : "";
+                document.getElementById("m-engagement").textContent = session.engagement_score ? Math.round(session.engagement_score) + "%" : "—";
+                document.getElementById("m-transcript").textContent = insights.transcript_chunks;
+                document.getElementById("m-presage").textContent = insights.presage_samples;
+
+                // Sentiment bar (map -1→1 to 0→100%)
+                const pct = Math.round(((session.overall_sentiment + 1) / 2) * 100);
+                document.getElementById("sent-bar").style.width = pct + "%";
+
+                // Emotion breakdown
+                const breakdown = insights.emotion_breakdown || {};
+                const emoWrap = document.getElementById("emotion-breakdown");
+                const emoEntries = Object.entries(breakdown);
+                const total = emoEntries.reduce((a, [, v]) => a + v, 0) || 1;
+                const colors = { happy: "var(--positive)", neutral: "var(--text-muted)", confused: "var(--neutral)", engaged: "#60A5FA", negative: "var(--negative)" };
+                if (emoEntries.length) {
+                    emoWrap.innerHTML = emoEntries.sort((a, b) => b[1] - a[1]).map(([emo, count]) => {
+                        const p = Math.round((count / total) * 100);
+                        return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:var(--text-secondary);text-transform:capitalize">${emo}</span>
+            <span style="font-weight:700;color:${colors[emo] || "var(--text-secondary)"}">${p}%</span>
+          </div>
+          <div class="sentiment-bar">
+            <div class="sentiment-bar__fill" style="width:${p}%;background:${colors[emo] || "var(--text-muted)"}"></div>
+          </div>
+        </div>`;
+                    }).join("");
+                }
+
+                // Actionable Insights
+                const list = document.getElementById("insights-list");
+                const tips = generateInsights(session, insights);
+                list.innerHTML = tips.map(t => `
+      <div class="insight-card">
+        <div class="insight-card__icon" style="background:${t.bg}">${t.icon}</div>
+        <div class="insight-card__text">${t.text}</div>
+      </div>`).join("");
+
+                // Timeline
+                const tl = document.getElementById("timeline-wrap");
+                const evs = session.events || [];
+                if (evs.length) {
+                    tl.innerHTML = evs.map(e => {
+                        const mins = Math.floor(e.timestamp_ms / 60000);
+                        const secs = Math.floor((e.timestamp_ms % 60000) / 1000);
+                        const label = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+                        const cls = e.source === "presage" ? "presage" : "wispr";
+                        const src = e.source === "presage" ? "Presage" : "Wispr";
+                        const body = e.source === "presage"
+                            ? `<div>${e.emotion || "?"} ${e.valence != null ? `(${e.valence > 0 ? "+" : ""}${e.valence.toFixed(2)})` : ""}</div>`
+                            : `<div>${e.speaker ? `<span class="timeline-event__speaker">${e.speaker} · </span>` : ""}${e.text || ""}</div>`;
+                        return `<div class="timeline-event ${cls}">
+          <div class="timeline-event__time">${label}</div>
+          <div class="timeline-event__content">
+            <div class="timeline-event__source">${src}</div>
+            <div class="timeline-event__text">${body}</div>
+          </div>
+        </div>`;
+                    }).join("");
+                }
+
+            } catch (e) {
+                console.error(e);
+                toast("Failed to load session", "error");
+            }
+        })();
+
+        function generateInsights(session, insights) {
+            const tips = [];
+            const { label } = sentimentLabel(session.overall_sentiment);
+
+            if (session.overall_sentiment > 0.2) {
+                tips.push({ icon: "✅", bg: "rgba(34,197,94,0.12)", text: `<strong>Positive overall sentiment</strong> — the client showed mostly positive reactions. Good momentum to build on in the follow-up.` });
+            } else if (session.overall_sentiment < -0.2) {
+                tips.push({ icon: "⚠️", bg: "rgba(239,68,68,0.12)", text: `<strong>Negative sentiment detected.</strong> Review the moments where the client seemed displeased and address those objections in your next touchpoint.` });
+            } else {
+                tips.push({ icon: "ℹ️", bg: "rgba(234,179,8,0.12)", text: `<strong>Neutral sentiment</strong> — the client was composed but non-committal. Consider adding a stronger call-to-action in the follow-up.` });
+            }
+
+            if (session.engagement_score > 70) {
+                tips.push({ icon: "🔥", bg: "rgba(59,130,246,0.12)", text: `<strong>High engagement (${Math.round(session.engagement_score)}%)</strong> — the customer was actively engaged. Strike while the iron is hot.` });
+            } else if (session.engagement_score < 40) {
+                tips.push({ icon: "😴", bg: "rgba(234,179,8,0.1)", text: `<strong>Low engagement (${Math.round(session.engagement_score)}%)</strong> — consider a shorter, more focused pitch next time.` });
+            }
+
+            if (insights.presage_samples === 0) {
+                tips.push({ icon: "📷", bg: "rgba(100,100,100,0.1)", text: `<strong>No Presage data</strong> — connect the camera feed to start capturing facial emotion data.` });
+            }
+
+            if (insights.transcript_chunks === 0) {
+                tips.push({ icon: "🎙️", bg: "rgba(100,100,100,0.1)", text: `<strong>No transcript data</strong> — connect the Wispr / ElevenLabs flow to capture spoken dialogue.` });
+            }
+
+            if (!tips.length) {
+                tips.push({ icon: "📋", bg: "rgba(100,100,100,0.1)", text: "Session data is still being processed." });
+            }
+
+            return tips;
+        }
+    </script>
+</body>
+
+</html>

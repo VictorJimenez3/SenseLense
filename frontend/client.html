@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SenseLense — Client Profile</title>
+    <meta name="description" content="View client details, session history, and conversation insights." />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+    <div class="app-shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar__logo">
+                <img src="assets/adp-logo.svg" alt="ADP" />
+                <div class="sidebar__tagline">SenseLense</div>
+            </div>
+            <nav class="sidebar__nav">
+                <div class="nav-section-label">Main</div>
+                <a class="nav-item" href="index.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a class="nav-item active" href="clients.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Clients
+                </a>
+                <a class="nav-item" href="sessions.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    Sessions
+                </a>
+                <div class="nav-section-label">Actions</div>
+                <a class="nav-item" href="record.html">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    </svg>
+                    New Session
+                </a>
+            </nav>
+            <div class="sidebar__footer">
+                <div class="status-badge">
+                    <div class="status-dot online"></div>
+                    <span>Backend</span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <a href="clients.html" class="btn btn-ghost btn-icon" title="Back">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                        </svg>
+                    </a>
+                    <div>
+                        <div class="topbar__title" id="client-name-title">Client Profile</div>
+                        <div class="topbar__sub" id="client-company-sub"></div>
+                    </div>
+                </div>
+                <div class="topbar__actions">
+                    <button class="btn btn-primary" id="new-session-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+                        </svg>
+                        Record Session
+                    </button>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <!-- Profile Hero -->
+                <div class="card" style="margin-bottom:24px">
+                    <div style="display:flex;align-items:center;gap:20px">
+                        <div class="avatar lg" id="client-avatar">?</div>
+                        <div style="flex:1">
+                            <div style="font-size:22px;font-weight:800;color:var(--text-primary)" id="client-name-big">
+                                Loading…</div>
+                            <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="client-meta"></div>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:28px;font-weight:800;color:var(--text-primary)"
+                                id="client-session-count">—</div>
+                            <div style="font-size:12px;color:var(--text-muted)">Sessions</div>
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div style="font-size:13px;color:var(--text-secondary);white-space:pre-line" id="client-notes">—
+                    </div>
+                </div>
+
+                <!-- Sessions for this client -->
+                <div class="section-header">
+                    <h2>Session History</h2>
+                </div>
+                <div class="card" style="padding:0;overflow:hidden">
+                    <div id="client-sessions-wrap">
+                        <div class="empty-state" style="padding:60px 20px">
+                            <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10" />
+                            </svg>
+                            <h3>No sessions yet</h3>
+                            <p>Record a session with this client to see history here.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { api } from "./js/api.js";
+        import { toast, initials, fmtDate, sentimentLabel } from "./js/utils.js";
+
+        const params = new URLSearchParams(location.search);
+        const clientId = params.get("id");
+
+        if (!clientId) { location.href = "clients.html"; }
+
+        document.getElementById("new-session-btn").addEventListener("click", () => {
+            location.href = `record.html?client_id=${clientId}`;
+        });
+
+        (async () => {
+            try {
+                const client = await api.getClient(clientId);
+
+                const ini = initials(client.name);
+                document.getElementById("client-avatar").textContent = ini;
+                document.getElementById("client-name-title").textContent = client.name;
+                document.getElementById("client-name-big").textContent = client.name;
+                document.getElementById("client-company-sub").textContent = client.company || "";
+                document.getElementById("client-session-count").textContent = client.session_count;
+                document.getElementById("client-notes").textContent = client.notes || "No notes added.";
+
+                let meta = [];
+                if (client.company) meta.push(client.company);
+                if (client.email) meta.push(client.email);
+                document.getElementById("client-meta").textContent = meta.join("  ·  ");
+                document.title = `SenseLense — ${client.name}`;
+
+                const wrap = document.getElementById("client-sessions-wrap");
+                if (!client.sessions?.length) return;
+
+                wrap.innerHTML = `<table class="data-table">
+      <thead><tr><th>Title</th><th>Date</th><th>Sentiment</th><th>Engagement</th><th></th></tr></thead>
+      <tbody>${client.sessions.map(s => {
+                    const { label, cls } = sentimentLabel(s.overall_sentiment);
+                    return `<tr onclick="location='session.html?id=${s.id}'" style="cursor:pointer">
+          <td>${s.title}</td>
+          <td>${fmtDate(s.started_at)}</td>
+          <td><span class="emotion-pill ${cls}">${label}</span></td>
+          <td>${s.engagement_score ? Math.round(s.engagement_score) + "%" : "—"}</td>
+          <td><span class="badge ${s.ended_at ? "green" : "red"}">${s.ended_at ? "Done" : "Live"}</span></td>
+        </tr>`;
+                }).join("")}</tbody>
+    </table>`;
+
+            } catch (e) {
+                toast("Failed to load client", "error");
+            }
+        })();
+    </script>
+</body>
+
+</html>

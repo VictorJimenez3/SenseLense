@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SenseLense — Dashboard</title>
+  <meta name="description" content="ADP SenseLense — AI-powered sales conversation intelligence dashboard." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__logo">
+      <img src="assets/adp-logo.svg" alt="ADP" />
+      <div class="sidebar__tagline">SenseLense</div>
+    </div>
+
+    <nav class="sidebar__nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item active" href="index.html" id="nav-dashboard">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" href="clients.html" id="nav-clients">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clients
+      </a>
+      <a class="nav-item" href="sessions.html" id="nav-sessions">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Sessions
+      </a>
+
+      <div class="nav-section-label">Actions</div>
+      <a class="nav-item" href="record.html" id="nav-record">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+        New Session
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="status-badge">
+        <div class="status-dot online" id="api-status-dot"></div>
+        <span id="api-status-text">Connecting…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar__title">Dashboard</div>
+        <div class="topbar__sub" id="topbar-date"></div>
+      </div>
+      <div class="topbar__actions">
+        <a href="record.html" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
+          Start Session
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Stats -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="stat-card__value" id="stat-clients">—</div>
+          <div class="stat-card__label">Total Clients</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-card__value" id="stat-sessions">—</div>
+          <div class="stat-card__label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="stat-card__value" id="stat-sentiment">—</div>
+          <div class="stat-card__label">Avg Sentiment</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="stat-card__value" id="stat-engagement">—</div>
+          <div class="stat-card__label">Avg Engagement</div>
+        </div>
+      </div>
+
+      <!-- Two-col layout -->
+      <div class="grid-2" style="gap:24px">
+
+        <!-- Recent Sessions -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Recent Sessions</div>
+              <div class="card__sub">Latest recorded conversations</div>
+            </div>
+            <a href="sessions.html" class="btn btn-ghost btn-sm">View all</a>
+          </div>
+          <div id="recent-sessions">
+            <div class="empty-state">
+              <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <h3>No sessions yet</h3>
+              <p>Start a recording to see sessions here.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Clients -->
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Recent Clients</div>
+              <div class="card__sub">Your latest contacts</div>
+            </div>
+            <a href="clients.html" class="btn btn-ghost btn-sm">View all</a>
+          </div>
+          <div id="recent-clients">
+            <div class="empty-state">
+              <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <h3>No clients yet</h3>
+              <p>Add a client to get started.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { api }            from "./js/api.js";
+import { fmtDate, fmtDateShort, sentimentLabel, initials, toast } from "./js/utils.js";
+
+// Date in topbar
+document.getElementById("topbar-date").textContent = new Date().toLocaleDateString("en-US", {
+  weekday: "long", month: "long", day: "numeric"
+});
+
+// API health check
+(async () => {
+  try {
+    await api.health();
+    document.getElementById("api-status-dot").className = "status-dot online";
+    document.getElementById("api-status-text").textContent = "Backend online";
+  } catch {
+    document.getElementById("api-status-dot").className = "status-dot";
+    document.getElementById("api-status-text").textContent = "Backend offline";
+  }
+})();
+
+// Load stats + recent data
+(async () => {
+  try {
+    const [clients, sessions] = await Promise.all([api.getClients(), api.getSessions()]);
+
+    document.getElementById("stat-clients").textContent  = clients.length;
+    document.getElementById("stat-sessions").textContent = sessions.length;
+
+    const completed = sessions.filter(s => s.ended_at);
+    const avgSent = completed.length
+      ? completed.reduce((a, s) => a + (s.overall_sentiment || 0), 0) / completed.length : 0;
+    const avgEng  = completed.length
+      ? completed.reduce((a, s) => a + (s.engagement_score  || 0), 0) / completed.length : 0;
+
+    const { label, cls } = sentimentLabel(avgSent);
+    document.getElementById("stat-sentiment").textContent   = label;
+    document.getElementById("stat-sentiment").style.color   = cls === "positive" ? "var(--positive)" : cls === "negative" ? "var(--negative)" : "inherit";
+    document.getElementById("stat-engagement").textContent  = completed.length ? Math.round(avgEng) + "%" : "—";
+
+    // Recent sessions list
+    const recentSessions = sessions.slice(0, 5);
+    const sessEl = document.getElementById("recent-sessions");
+    if (recentSessions.length) {
+      sessEl.innerHTML = `<table class="data-table">
+        <thead><tr><th>Title</th><th>Date</th><th>Sentiment</th></tr></thead>
+        <tbody>${recentSessions.map(s => {
+          const { label, cls } = sentimentLabel(s.overall_sentiment);
+          return `<tr onclick="location='session.html?id=${s.id}'">
+            <td>${s.title}</td>
+            <td>${fmtDateShort(s.started_at)}</td>
+            <td><span class="emotion-pill ${cls}">${label}</span></td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>`;
+    }
+
+    // Recent clients list
+    const recentClients = clients.slice(0, 5);
+    const cliEl = document.getElementById("recent-clients");
+    if (recentClients.length) {
+      cliEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
+        ${recentClients.map(c => `
+          <div class="insight-card" onclick="location='client.html?id=${c.id}'" style="cursor:pointer">
+            <div class="avatar sm">${initials(c.name)}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${c.name}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${c.company || "—"} · ${c.session_count} session${c.session_count !== 1 ? "s" : ""}</div>
+            </div>
+          </div>`).join("")}
+      </div>`;
+    }
+
+  } catch (e) {
+    toast("Could not load dashboard data — is the backend running?", "error");
+  }
+})();
+</script>
+</body>
+</html>
