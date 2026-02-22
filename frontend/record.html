@@ -174,10 +174,177 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ── MorphCast Emotion Analytics Panel ── */
+        .mc-metric-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .mc-metric {
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+        }
+
+        .mc-metric__label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .mc-metric__value {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--text-primary);
+            transition: color 0.4s ease;
+        }
+
+        .mc-metric__sub {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Attention SVG ring */
+        .mc-ring-wrap {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mc-ring-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .mc-ring-inner {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .mc-ring-num {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--red);
+            line-height: 1;
+        }
+
+        .mc-ring-pct {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Valence track */
+        .mc-val-track {
+            width: 100%;
+            height: 5px;
+            background: var(--surface-4);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .mc-val-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+
+        /* Emotion bars */
+        .mc-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .mc-bar-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .mc-bar-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .mc-bar-row span:last-child {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .mc-bar-track {
+            height: 5px;
+            background: var(--surface-4);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .mc-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.35s ease;
+            width: 0%;
+        }
+
+        /* Low-attention alarm */
+        .mc-alarm {
+            display: none;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: var(--negative);
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 12px;
+            animation: mc-flash 1.2s infinite;
+        }
+
+        .mc-alarm.show {
+            display: block;
+        }
+
+        @keyframes mc-flash {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
     </style>
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
     <script src="js/utils.js"></script>
+    <!-- MorphCast AI SDK -->
+    <script src="https://ai-sdk.morphcast.com/v1.16/ai-sdk.js"></script>
 </head>
 
 <body>
@@ -347,11 +514,6 @@
                             </div>
 
                             <div class="emotion-chip-row" id="emotion-chips" style="display:none">
-                                <span class="live-chip" id="chip-neutral">Neutral</span>
-                                <span class="live-chip" id="chip-happy">Happy 😊</span>
-                                <span class="live-chip" id="chip-confused">Confused 🤔</span>
-                                <span class="live-chip" id="chip-engaged">Engaged ✨</span>
-                                <span class="live-chip" id="chip-negative">Displeased 😟</span>
                             </div>
                         </div>
 
@@ -362,7 +524,8 @@
                                 <div class="card__title" style="margin:0">Live Transcript</div>
                                 <span class="badge blue" id="transcript-source">Wispr / ElevenLabs</span>
                             </div>
-                            <div style="padding:16px 20px;min-height:160px" id="transcript-wrap">
+                            <div class="transcript-feed" style="padding:16px 20px;min-height:160px"
+                                id="transcript-wrap">
                                 <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:40px 0">
                                     Transcript will appear here during recording…
                                 </div>
@@ -392,7 +555,61 @@
                             </div>
                         </div>
 
-                        <!-- Live Emotion Breakdown -->
+                        <!-- MorphCast Live Emotion Analytics -->
+                        <div class="card" id="morphcast-panel" style="display:none">
+                            <div class="card__title" style="margin-bottom:12px">Live Emotion Analytics
+                                <span
+                                    style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:8px">MorphCast</span>
+                            </div>
+
+                            <div class="mc-alarm" id="mc-alarm">⚠ LOW ATTENTION DETECTED</div>
+
+                            <!-- 3 metrics: attention · emotion · mood -->
+                            <div class="mc-metric-row">
+                                <div class="mc-metric">
+                                    <div class="mc-metric__label">Attention</div>
+                                    <div class="mc-ring-wrap">
+                                        <svg class="mc-ring-svg" width="64" height="64" viewBox="0 0 64 64">
+                                            <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface-4)"
+                                                stroke-width="6" />
+                                            <circle cx="32" cy="32" r="26" fill="none" stroke="var(--red)"
+                                                stroke-width="6" stroke-dasharray="163.4" stroke-dashoffset="163.4"
+                                                id="mc-ring-circle" stroke-linecap="round"
+                                                style="transition:stroke-dashoffset 0.7s ease;" />
+                                        </svg>
+                                        <div class="mc-ring-inner">
+                                            <div class="mc-ring-num" id="mc-att-val">—</div>
+                                            <div class="mc-ring-pct">%</div>
+                                        </div>
+                                    </div>
+                                    <div class="mc-metric__sub" id="mc-att-raw">raw: —</div>
+                                </div>
+
+                                <div class="mc-metric">
+                                    <div class="mc-metric__label">Dominant</div>
+                                    <div class="mc-metric__value" id="mc-dom-emo"
+                                        style="font-size:16px;color:var(--positive)">—</div>
+                                    <div class="mc-metric__sub" id="mc-positivity">Pos: —</div>
+                                </div>
+
+                                <div class="mc-metric">
+                                    <div class="mc-metric__label">Mood</div>
+                                    <div class="mc-metric__value" id="mc-valence-val">—</div>
+                                    <div class="mc-val-track">
+                                        <div class="mc-val-fill" id="mc-val-bar" style="background:var(--neutral)">
+                                        </div>
+                                    </div>
+                                    <div class="mc-metric__sub" id="mc-val-desc">—</div>
+                                </div>
+                            </div>
+
+                            <!-- 5-emotion bars -->
+                            <div class="mc-bars" id="mc-emotion-bars">
+                                <!-- populated by buildMcBars() -->
+                            </div>
+                        </div>
+
+                        <!-- Live Emotion Breakdown (DeepFace) -->
                         <div class="card">
                             <div class="card__title" style="margin-bottom:16px">Emotion Tracker</div>
                             <div id="emotion-tracker">
@@ -483,10 +700,193 @@
             document.getElementById("timer").style.color = "var(--text-muted)";
         }
 
-        // ── Camera + Mic (video for DeepFace, audio for ElevenLabs) ─────
+        // ── MorphCast config ──────────────────────────────────────────────────
+        const MC_LICENSE = "sk514a0ced0dca050a7951d6591224c8cc7a7fec72762f";
+        const MC_SNAPSHOT_MS = 20000; // send to DB every 20s
+
+        const MC_DISPLAY_EMOS = ['Happy', 'Surprise', 'Sad', 'Negative', 'Neutral'];
+        const MC_RAW_EMOS = ['Happy', 'Surprise', 'Sad', 'Angry', 'Disgust', 'Fear', 'Neutral'];
+        const MC_EMO_COLORS = {
+            Happy: 'var(--positive)', Surprise: '#60A5FA',
+            Sad: '#818CF8', Negative: 'var(--negative)', Neutral: 'var(--text-muted)'
+        };
+
+        // MorphCast state
+        let mcAttSmoothed = 100;
+        const MC_ATT_RISE = 0.25, MC_ATT_FALL = 0.04;
+        let mcBuf = { emotions: {}, attention: [], valence: [], positivity: [] };
+        MC_RAW_EMOS.forEach(e => mcBuf.emotions[e] = []);
+        let mcSnapshotHandle = null;
+        let mcSdkStarted = false;
+
+        function buildMcBars() {
+            const c = document.getElementById('mc-emotion-bars'); c.innerHTML = '';
+            MC_DISPLAY_EMOS.forEach(n => {
+                const d = document.createElement('div'); d.className = 'mc-bar-item';
+                d.innerHTML = `<div class="mc-bar-row"><span>${n}</span><span id="mc-ev-${n}">0%</span></div>
+                    <div class="mc-bar-track"><div class="mc-bar-fill" id="mc-eb-${n}" style="background:${MC_EMO_COLORS[n]}"></div></div>`;
+                c.appendChild(d);
+            });
+        }
+
+        function setMcBar(name, val) {
+            const bar = document.getElementById('mc-eb-' + name);
+            const txt = document.getElementById('mc-ev-' + name);
+            if (bar) bar.style.width = (val * 100).toFixed(1) + '%';
+            if (txt) txt.textContent = (val * 100).toFixed(0) + '%';
+        }
+
+        function avgArr(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
+
+        function flushMcSnapshot() {
+            if (!sessionId) return;
+            const emoAvgs = {};
+            MC_RAW_EMOS.forEach(e => emoAvgs[e] = avgArr(mcBuf.emotions[e]));
+            const negative = Math.min(1, (emoAvgs.Angry || 0) + (emoAvgs.Disgust || 0) + (emoAvgs.Fear || 0));
+            emoAvgs.Negative = negative;
+
+            let dominant = 'Neutral', maxV = 0;
+            MC_DISPLAY_EMOS.forEach(e => { const v = emoAvgs[e] || 0; if (v > maxV) { maxV = v; dominant = e; } });
+
+            const tsMs = timerSecs * 1000;
+            const valenceNorm = (avgArr(mcBuf.valence) - 50) / 50; // convert 0-100 → -1..1
+
+            // Store as a presage-compatible event with extra data in the text field
+            window.api.ingestEvents(sessionId, [{
+                timestamp_ms: tsMs,
+                source: 'morphcast',
+                emotion: dominant.toLowerCase(),
+                valence: parseFloat(valenceNorm.toFixed(3)),
+                text: JSON.stringify({
+                    attention: Math.round(avgArr(mcBuf.attention)),
+                    valence100: Math.round(avgArr(mcBuf.valence)),
+                    positivity: Math.round(avgArr(mcBuf.positivity)),
+                    emotions: Object.fromEntries(
+                        MC_DISPLAY_EMOS.map(e => [e.toLowerCase(), parseFloat((emoAvgs[e] || 0).toFixed(3))]
+                        ))
+                })
+            }]).catch(() => { });
+
+            // Reset buffers
+            MC_RAW_EMOS.forEach(e => mcBuf.emotions[e] = []);
+            ['attention', 'valence', 'positivity'].forEach(k => mcBuf[k] = []);
+        }
+
+        function startMorphCast(stream) {
+            if (typeof CY === 'undefined') {
+                console.warn('[MorphCast] SDK not loaded — skipping.');
+                return;
+            }
+            if (mcSdkStarted) return;
+            mcSdkStarted = true;
+
+            CY.loader()
+                .licenseKey(MC_LICENSE)
+                .maxInputFrameSize(480)
+                .powerSave(0)
+                .addModule(CY.modules().FACE_EMOTION.name)
+                .addModule(CY.modules().FACE_ATTENTION.name)
+                .addModule(CY.modules().FACE_AROUSAL_VALENCE.name)
+                .addModule(CY.modules().FACE_POSITIVITY.name)
+                .addModule(CY.modules().ALARM_LOW_ATTENTION.name, { threshold: 0.3 })
+                .load()
+                .then(({ start }) => {
+                    start();
+                    setupMcListeners();
+                    document.getElementById('morphcast-panel').style.display = 'block';
+                    buildMcBars();
+                    // Periodic DB persistence
+                    mcSnapshotHandle = setInterval(flushMcSnapshot, MC_SNAPSHOT_MS);
+                })
+                .catch(err => console.error('[MorphCast] SDK error:', err));
+        }
+
+        function stopMorphCast() {
+            clearInterval(mcSnapshotHandle);
+            flushMcSnapshot(); // final snapshot
+            mcSdkStarted = false;
+            document.getElementById('morphcast-panel').style.display = 'none';
+            // MorphCast SDK has no explicit stop; camera tracks are stopped by stopCamera()
+        }
+
+        function setupMcListeners() {
+            window.addEventListener(CY.modules().FACE_EMOTION.eventName, evt => {
+                const out = evt.detail.output; if (!out) return;
+                const raw = out.emotion || {};
+                MC_RAW_EMOS.forEach(n => mcBuf.emotions[n].push(raw[n] || 0));
+                const neg = Math.min(1, (raw.Angry || 0) + (raw.Disgust || 0) + (raw.Fear || 0));
+                setMcBar('Happy', raw.Happy || 0);
+                setMcBar('Surprise', raw.Surprise || 0);
+                setMcBar('Sad', raw.Sad || 0);
+                setMcBar('Negative', neg);
+                setMcBar('Neutral', raw.Neutral || 0);
+
+                let label = out.dominantEmotion || 'Neutral';
+                if (['Angry', 'Disgust', 'Fear'].includes(label)) label = 'Negative';
+                const domEl = document.getElementById('mc-dom-emo');
+                if (domEl) {
+                    domEl.textContent = label;
+                    domEl.style.color = MC_EMO_COLORS[label] || 'var(--text-primary)';
+                }
+
+                // Also feed the legacy emotion tracker / chips
+                const legacyEmo = label.toLowerCase();
+                Object.values(CHIP_IDS).forEach(id => document.getElementById(id)?.classList.remove('active'));
+                document.getElementById(CHIP_IDS[legacyEmo] || 'chip-neutral')?.classList.add('active');
+                if (legacyEmo in EMOTION_COUNTS) EMOTION_COUNTS[legacyEmo]++;
+                renderEmotionTracker();
+            });
+
+            window.addEventListener(CY.modules().FACE_ATTENTION.eventName, evt => {
+                const raw = evt.detail.output.attention; if (raw === undefined) return;
+                const rawPct = raw * 100, diff = rawPct - mcAttSmoothed;
+                mcAttSmoothed = Math.max(0, Math.min(100,
+                    mcAttSmoothed + (diff > 0 ? MC_ATT_RISE : MC_ATT_FALL) * diff
+                ));
+                const display = Math.round(mcAttSmoothed);
+                mcBuf.attention.push(display);
+
+                const attEl = document.getElementById('mc-att-val');
+                const ringEl = document.getElementById('mc-ring-circle');
+                const rawEl = document.getElementById('mc-att-raw');
+                if (attEl) attEl.textContent = display;
+                if (ringEl) ringEl.setAttribute('stroke-dashoffset', 163.4 - (163.4 * mcAttSmoothed / 100));
+                if (rawEl) rawEl.textContent = `raw: ${Math.round(rawPct)}%`;
+            });
+
+            window.addEventListener(CY.modules().FACE_AROUSAL_VALENCE.eventName, evt => {
+                const o = evt.detail.output; if (o.valence === undefined) return;
+                const v = Math.round((o.valence + 1) / 2 * 100);
+                mcBuf.valence.push(v);
+
+                const valEl = document.getElementById('mc-valence-val');
+                const barEl = document.getElementById('mc-val-bar');
+                const descEl = document.getElementById('mc-val-desc');
+                const col = v > 60 ? 'var(--positive)' : v < 40 ? 'var(--negative)' : 'var(--neutral)';
+                const desc = v > 70 ? 'Positive' : v > 55 ? 'Mildly +' : v < 30 ? 'Negative' : v < 45 ? 'Mildly −' : 'Neutral';
+                if (valEl) { valEl.textContent = v; valEl.style.color = col; }
+                if (barEl) { barEl.style.width = v + '%'; barEl.style.background = col; }
+                if (descEl) { descEl.textContent = desc; }
+            });
+
+            window.addEventListener(CY.modules().FACE_POSITIVITY.eventName, evt => {
+                const pos = evt.detail.output.positivity; if (pos === undefined) return;
+                mcBuf.positivity.push(Math.round(pos * 100));
+                const posEl = document.getElementById('mc-positivity');
+                if (posEl) posEl.textContent = `Pos: ${Math.round(pos * 100)}%`;
+            });
+
+            window.addEventListener(CY.modules().ALARM_LOW_ATTENTION.eventName, evt => {
+                const alarm = document.getElementById('mc-alarm');
+                if (!alarm) return;
+                if (evt.detail.output.isLowAttention) alarm.classList.add('show');
+                else alarm.classList.remove('show');
+            });
+        }
+
+        // ── Camera + Mic (video for MorphCast, audio for ElevenLabs) ──────────
         let micStream = null;
         let mediaRecorder = null;
-        let frameHandle = null;
         const frameCanvas = document.createElement('canvas');
         const frameCtx = frameCanvas.getContext('2d');
 
@@ -499,10 +899,10 @@
                 vid.style.display = "block";
                 document.getElementById("camera-overlay").style.display = "none";
 
-                // DeepFace: grab a JPEG frame every 2.4s and POST to Flask
-                frameHandle = setInterval(captureAndAnalyzeFrame, 2400);
+                // MorphCast: SDK listens on the live camera stream in the browser
+                startMorphCast(videoStream);
 
-                // ElevenLabs: record mic in 30s chunks and POST to Flask
+                // ElevenLabs: record mic in chunks and POST to Flask
                 startMicRecording(videoStream);
 
             } catch (err) {
@@ -512,37 +912,14 @@
         }
 
         function stopCamera() {
-            clearInterval(frameHandle);
-            frameHandle = null;
+            stopMorphCast();
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop(); // fires one final ondataavailable chunk
+                mediaRecorder.stop();
             }
             videoStream?.getTracks().forEach(t => t.stop());
             const vid = document.getElementById("camera-video");
             vid.style.display = "none";
             document.getElementById("camera-overlay").style.display = "flex";
-        }
-
-        // ── DeepFace: grab canvas frame -> POST base64 JPEG to /analyze-frame ──
-        function captureAndAnalyzeFrame() {
-            if (!sessionId) return;
-            const vid = document.getElementById("camera-video");
-            if (!vid.videoWidth) return;
-            frameCanvas.width = 320;
-            frameCanvas.height = Math.round(vid.videoHeight * (320 / vid.videoWidth));
-            frameCtx.drawImage(vid, 0, 0, frameCanvas.width, frameCanvas.height);
-            const dataUrl = frameCanvas.toDataURL('image/jpeg', 0.7);
-            const tsMs = timerSecs * 1000;
-            window.api.analyzeFrame(sessionId, dataUrl, tsMs)
-                .then(r => {
-                    const emo = r.emotion || 'neutral';
-                    // Update chip UI directly from DeepFace result (no need to poll)
-                    Object.values(CHIP_IDS).forEach(id => document.getElementById(id)?.classList.remove('active'));
-                    document.getElementById(CHIP_IDS[emo] || 'chip-neutral')?.classList.add('active');
-                    if (emo in EMOTION_COUNTS) EMOTION_COUNTS[emo]++;
-                    renderEmotionTracker();
-                })
-                .catch(() => { }); // silently ignore if backend busy
         }
 
         // ── ElevenLabs: record mic in 30s chunks -> POST to /transcribe ──────
@@ -759,9 +1136,14 @@
                 document.getElementById("rec-status-text").textContent = "Session ended";
                 document.getElementById("emotion-chips").style.display = "none";
 
-                // Compute rough sentiment from emotion counts
+                // Compute sentiment: blend MorphCast valence avg with legacy emotion counts
                 const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0) || 1;
-                const posScore = ((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged) / total) * 2 - 1;
+                const legacyScore = ((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged) / total) * 2 - 1;
+                const mcValenceAvg = mcBuf.valence.length ? avgArr(mcBuf.valence) : null;
+                // If MorphCast ran, use its valence (0-100 → -1..1); otherwise fall back to legacy
+                const posScore = mcValenceAvg !== null
+                    ? parseFloat(((mcValenceAvg - 50) / 50).toFixed(2))
+                    : parseFloat(legacyScore.toFixed(2));
                 const engagement = Math.round(((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged + EMOTION_COUNTS.neutral * 0.5) / total) * 100);
 
                 try {

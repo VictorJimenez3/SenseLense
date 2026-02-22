@@ -4,7 +4,10 @@
  */
 
 (function () {
-    const API_BASE = "http://localhost:5050/api";
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const API_BASE = isLocal
+        ? "http://localhost:5050/api"
+        : "https://senselense.onrender.com/api";
 
     async function request(method, path, body = null) {
         const opts = {
@@ -34,6 +37,7 @@
         createSession: (data) => request("POST", "/sessions", data),
         getSession: (id, events = false) => request("GET", `/sessions/${id}?events=${events}`),
         endSession: (id, data) => request("PATCH", `/sessions/${id}/end`, data),
+        deleteSession: (id) => request("DELETE", `/sessions/${id}`),
         generateSummary: (id) => request("POST", `/sessions/${id}/summary/generate`),
         startRecording: (data) => request("POST", "/record", data),
 

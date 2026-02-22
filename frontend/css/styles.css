@@ -65,6 +65,8 @@ body {
     font-size: 14px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 a {
@@ -641,17 +643,17 @@ ol {
     background: var(--surface-1);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
-    padding: 32px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 12px;
     text-align: center;
 }
 
 .rec-ring {
-    width: 120px;
-    height: 120px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     border: 3px solid var(--surface-4);
     display: flex;
