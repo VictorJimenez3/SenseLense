@@ -25,3 +25,4 @@ httpx==0.28.1
 websockets==16.0
 pydantic==2.12.5
 packaging==26.0
+gunicorn==20.1.0
