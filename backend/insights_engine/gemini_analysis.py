@@ -1,27 +1,19 @@
-import google.generativeai as genai
-import json
-import re
 import sqlite3
 import os
+import json
 from dotenv import load_dotenv
+import google.generativeai as genai
 
-# Load .env for GEMINI_API_KEY
 load_dotenv()
-
-# Configure Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# Database path (adjust if needed)
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "database.db")
+# Path to your SQLite DB (adjust as needed)
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "adpitch.db")
 
 
 def generate_call_summary(conversation, physiology_summary=None):
-    """
-    Sends conversation (and optional physiology) to Gemini
-    Returns raw text response
-    """
     prompt = f"""
 You are an AI sales call analyst.
 
@@ -29,10 +21,9 @@ Provide a structured summary of this completed sales call.
 
 Include:
 - Overall summary (3-5 sentences)
-- Customer intent level (Low / Medium / High)
-- Key objections
-- Key buying signals
-- Recommended improvement for the agent
+- Key points (bullets)
+- Action items for the agent
+- Overall sentiment, engagement, and risk level
 
 Conversation:
 {conversation}
@@ -45,55 +36,58 @@ Conversation:
 
 
 def parse_gemini_response(text):
-    """
-    Cleans text response and parses JSON
-    """
-    cleaned = re.sub(r"```json|```", "", text).strip()
+    # remove any code fences
+    cleaned = text.replace("```", "").strip()
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
-        # fallback if Gemini output is malformed
+        # fallback: just store raw text in summary_md
         return {
-            "summary": cleaned,
-            "intent_level": "Unknown",
-            "objections": [],
-            "buying_signals": [],
-            "agent_improvement": ""
+            "summary_md": cleaned,
+            "key_points": "",
+            "action_items": "",
+            "sentiment_score": None,
+            "engagement_score": None,
+            "risk_score": None
         }
 
 
-def save_ai_summary(call_id, ai_data):
-    """
-    Saves structured AI summary to ai_summaries table
-    """
+def save_gemini_output(session_id, ai_data, target_role="overall"):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO ai_summaries (
-            call_id,
-            summary,
-            intent_level,
-            objections,
-            buying_signals,
-            agent_improvement
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO gemini_outputs (
+            session_id,
+            target_role,
+            summary_md,
+            key_points,
+            action_items,
+            sentiment_score,
+            engagement_score,
+            risk_score,
+            raw_json,
+            model,
+            model_version
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        call_id,
-        ai_data.get("summary"),
-        ai_data.get("intent_level"),
-        json.dumps(ai_data.get("objections", [])),
-        json.dumps(ai_data.get("buying_signals", [])),
-        ai_data.get("agent_improvement")
+        session_id,
+        target_role,
+        ai_data.get("summary_md"),
+        ai_data.get("key_points"),
+        ai_data.get("action_items"),
+        ai_data.get("sentiment_score"),
+        ai_data.get("engagement_score"),
+        ai_data.get("risk_score"),
+        json.dumps(ai_data),
+        "gemini",
+        "1.5-flash"
     ))
     conn.commit()
     conn.close()
 
 
-def run_ai_analysis(call_id, conversation, physiology_summary=None):
-    """
-    Full pipeline: generate -> parse -> save
-    """
+def run_ai_analysis(session_id, conversation, physiology_summary=None):
     raw = generate_call_summary(conversation, physiology_summary)
     ai_data = parse_gemini_response(raw)
-    save_ai_summary(call_id, ai_data)
-    return ai_data  # optional: return for immediate use
+    save_gemini_output(session_id, ai_data)
+    return ai_data
