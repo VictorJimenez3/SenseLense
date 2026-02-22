@@ -424,19 +424,18 @@
         document.getElementById("btn-delete-session").addEventListener("click", async () => {
             if (!confirm("Are you sure you want to permanently delete this session?")) return;
             try {
-                // Disable button
                 const btn = document.getElementById("btn-delete-session");
                 btn.disabled = true;
                 btn.innerHTML = "Deleting...";
                 await api.deleteSession(sessionId);
                 toast("Session deleted", "success");
-                // Go back to sessions list
                 setTimeout(() => location.href = "sessions.html", 600);
             } catch (e) {
                 console.error(e);
                 toast("Failed to delete session", "error");
-                document.getElementById("btn-delete-session").disabled = false;
-                document.getElementById("btn-delete-session").innerHTML = "Delete";
+                const btn = document.getElementById("btn-delete-session");
+                btn.disabled = false;
+                btn.innerHTML = "Delete";
             }
         });
     </script>

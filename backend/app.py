@@ -20,6 +20,14 @@ def create_app() -> Flask:
     from blueprints.api import api_bp
     app.register_blueprint(api_bp, url_prefix="/api")
 
+    @app.route("/")
+    def index():
+        return jsonify({
+            "message": "SenseLense Backend is Running",
+            "version": "1.0.0",
+            "environment": "production" if os.getenv("RENDER") else "development"
+        })
+
     try:
         from AI.ai import ai_bp
         app.register_blueprint(ai_bp, url_prefix="/api")
