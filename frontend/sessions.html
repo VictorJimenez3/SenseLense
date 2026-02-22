@@ -7,6 +7,24 @@
     <title>SenseLense — Sessions</title>
     <meta name="description" content="View all recorded ADP sales sessions and their insights." />
     <link rel="stylesheet" href="css/styles.css" />
+  <script>
+    /* Apply saved theme + accent color immediately */
+    (function(){
+      var t = localStorage.getItem('sl-theme');
+      if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      var accent = localStorage.getItem('sl-accent');
+      if (accent) {
+        var r = parseInt(accent.slice(1,3),16), g = parseInt(accent.slice(3,5),16), b = parseInt(accent.slice(5,7),16);
+        var root = document.documentElement;
+        root.style.setProperty('--red', accent);
+        root.style.setProperty('--red-light', 'rgb('+Math.min(255,r+30)+','+Math.min(255,g+30)+','+Math.min(255,b+30)+')');
+        root.style.setProperty('--red-dark',  'rgb('+Math.floor(r*.72)+','+Math.floor(g*.72)+','+Math.floor(b*.72)+')');
+        root.style.setProperty('--red-glow',  'rgba('+r+','+g+','+b+',.25)');
+        root.style.setProperty('--border-red','rgba('+r+','+g+','+b+',.4)');
+      }
+    })();
+  </script>
+<script src="js/auth.js"></script>
 </head>
 
 <body>
@@ -14,7 +32,7 @@
 
         <aside class="sidebar">
             <div class="sidebar__logo">
-                <img src="assets/adp-logo.svg" alt="ADP" />
+                <svg id="adp-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" style="height:36px;width:auto;color:var(--red);transition:color .2s ease"><path d="M81.952 21.15H78.08v3.87h3.873a1.66 1.66 0 0 1 1.659 1.663c0 .92-.74 1.66-1.66 1.66H78.08v3.872h3.873c3.056 0 5.532-2.478 5.532-5.532s-2.476-5.532-5.532-5.532zM59.88 41.624c4.636 0 8.632-2.715 10.5-6.645h4.937v6.645h2.764V34.98h3.873a8.3 8.3 0 0 0 8.301-8.297 8.3 8.3 0 0 0-8.301-8.299h-6.637v9.96h-3.94a11.62 11.62 0 0 0-11.497-9.959H46.26L32.7 41.624h3.232l3.872-6.645h13.923v6.645zm34.247-14.942c0 6.72-5.45 12.17-12.174 12.17V45.5h-10.5v-5.2c-2.843 3.2-6.966 5.2-11.563 5.2H49.865v-6.638h-7.827L38.166 45.5H25.873l18.07-30.98H59.88c4.598 0 8.72 2.006 11.564 5.184V14.5h10.5a12.18 12.18 0 0 1 12.174 12.172zM49.865 21.15v7.2h-6.178l-2.256 3.872h12.307V21.15zM68.734 30c0 4.9-3.966 8.85-8.854 8.85h-3.376v-3.87h3.376A4.98 4.98 0 0 0 64.862 30c0-2.747-2.23-4.98-4.982-4.98h-3.376v-3.87h3.376c4.888 0 8.854 3.962 8.854 8.85" fill="currentColor"/></svg>
                 <div class="sidebar__tagline">SenseLense</div>
             </div>
             <nav class="sidebar__nav">
@@ -56,9 +74,26 @@
                     </svg>
                     New Session
                 </a>
-            </nav>
-            <div class="sidebar__footer">
-                <div class="status-badge">
+            
+      
+      <a class="nav-item" href="#" id="nav-tutorial" onclick="event.preventDefault();SLTutorial.open()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3-3h7z"/></svg>
+        Tutorial
+      </a>
+
+      <div class="nav-section-label">System</div>
+      <a class="nav-item" href="settings.html" id="nav-settings">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+                <div class="sidebar__footer">
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span id="theme-label">Light Mode</span>
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      </button>
+      <div class="status-badge" style="margin-top:10px">
                     <div class="status-dot online"></div>
                     <span>Backend</span>
                 </div>
@@ -111,7 +146,11 @@
 
     <div id="toast-container"></div>
 
-    <script type="module">
+    <script>
+  function toggleTheme(){var t=localStorage.getItem('sl-theme')||'dark';var n=t==='dark'?'light':'dark';localStorage.setItem('sl-theme',n);document.documentElement.setAttribute('data-theme',n==='light'?'light':'');var l=document.getElementById('theme-label');if(l)l.textContent=n==='light'?'Dark Mode':'Light Mode';}
+</script>
+<script type="module">
+document.getElementById("theme-label").textContent = currentTheme()==='light'?'Dark Mode':'Light Mode'; };
         import { api } from "./js/api.js";
         import { toast, fmtDate, sentimentLabel } from "./js/utils.js";
 
@@ -159,6 +198,8 @@
 
         load();
     </script>
+
+<script src="js/tutorial.js"></script>
 </body>
 
 </html>
