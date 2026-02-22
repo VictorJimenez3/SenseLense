@@ -286,7 +286,8 @@
                 document.getElementById("sess-summary").innerHTML = rawSummary
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                     .replace(/\n\n/g, '<br><br>')
-                    .replace(/\n- /g, '<br>• ');
+                    .replace(/\n- /g, '<br>• ')
+                    .replace(/\n/g, '<br>');
 
                 // Metrics
                 const { label, cls } = sentimentLabel(session.overall_sentiment);

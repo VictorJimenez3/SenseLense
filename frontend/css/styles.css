@@ -65,6 +65,8 @@ body {
     font-size: 14px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 a {
