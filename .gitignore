@@ -3,13 +3,17 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
-.env
-.flaskenv
 
-# Database
+# Environment / secrets — teammates should create their own
+backend/Transcriptions/.env
+*.env
+
+# Database files (auto-created by setup.sh)
 backend/instance/
 *.db
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # Frontend/IDE
 .DS_Store
