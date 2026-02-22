@@ -451,11 +451,13 @@
         })();
 
         // ── Load Clients ───────────────────────────────────────────────
+        let clientsMap = {};
         (async () => {
             try {
                 const clients = await api.getClients();
                 const sel = document.getElementById("sel-client");
                 clients.forEach(c => {
+                    clientsMap[c.id] = c.name;
                     const opt = document.createElement("option");
                     opt.value = c.id;
                     opt.textContent = `${c.name}${c.company ? " — " + c.company : ""}`;
@@ -548,25 +550,44 @@
             const audioOnly = new MediaStream(stream.getAudioTracks());
             const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
                 ? 'audio/webm;codecs=opus' : 'audio/webm';
-            mediaRecorder = new MediaRecorder(audioOnly, { mimeType });
 
-            mediaRecorder.ondataavailable = async (e) => {
-                if (!e.data || e.data.size < 1000) return; // skip empty chunks
-                const fd = new FormData();
-                fd.append('audio', e.data, 'chunk.webm');
-                try {
-                    const result = await window.api.transcribeChunk(sessionId, fd);
-                    if (result.segments?.length) {
-                        toast(`Transcribed ${result.segments.length} new line(s)`, 'info');
-                        // Trigger immediate transcript poll to show the new lines
-                        pollTranscript();
+            const createRecorder = () => {
+                const recorder = new MediaRecorder(audioOnly, { mimeType });
+                recorder.ondataavailable = async (e) => {
+                    if (!e.data || e.data.size < 2000) return; // ignore tiny/invalid chunks
+
+                    const offsetMs = timerSecs * 1000;
+                    const fd = new FormData();
+                    fd.append('audio', e.data, 'chunk.webm');
+
+                    try {
+                        const result = await window.api.transcribeChunk(sessionId, fd, offsetMs);
+                        if (result.segments?.length) {
+                            toast(`Transcribed ${result.segments.length} new line(s)`, 'info');
+                            pollTranscript();
+                        }
+                    } catch (err) {
+                        console.warn('[ElevenLabs] Chunk error:', err.message);
                     }
-                } catch (err) {
-                    console.warn('[ElevenLabs] chunk error:', err.message);
-                }
+                };
+                return recorder;
             };
 
-            mediaRecorder.start(10000); // collect chunks every 10s
+            mediaRecorder = createRecorder();
+            mediaRecorder.start();
+
+            // Cycle the recorder every 10 seconds to generate a fresh valid file with headers
+            const cycleInterval = setInterval(() => {
+                if (!recording) {
+                    clearInterval(cycleInterval);
+                    return;
+                }
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    mediaRecorder = createRecorder();
+                    mediaRecorder.start();
+                }
+            }, 10000);
         }
 
         // ── Real Emotion Tracking — polls Presage events from Flask ──────
@@ -669,9 +690,16 @@
                 newEvents.forEach(e => {
                     seenTranscriptIds.add(e.id);
                     const isSeller = (e.speaker || "").toLowerCase() === "rep" || (e.speaker || "").toLowerCase() === "seller";
+
+                    let speakerLabel = (e.speaker || 'unknown').toUpperCase();
+                    if (!isSeller && e.speaker === 'client') {
+                        const clientId = document.getElementById("sel-client").value;
+                        if (clientsMap[clientId]) speakerLabel = clientsMap[clientId].toUpperCase();
+                    }
+
                     const el = document.createElement("div");
                     el.className = "transcript-line";
-                    el.innerHTML = `<div class="transcript-line__speaker" style="color:${isSeller ? 'var(--red)' : '#60A5FA'}">${(e.speaker || 'unknown').toUpperCase()}</div>
+                    el.innerHTML = `<div class="transcript-line__speaker" style="color:${isSeller ? 'var(--red)' : '#60A5FA'}">${speakerLabel}</div>
                         <div class="transcript-line__text">${e.text}</div>`;
                     wrap.appendChild(el);
                 });
@@ -737,13 +765,23 @@
                 const engagement = Math.round(((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged + EMOTION_COUNTS.neutral * 0.5) / total) * 100);
 
                 try {
+                    const notes = document.getElementById("quick-notes").value || "Session completed.";
                     await api.endSession(sessionId, {
-                        summary: document.getElementById("quick-notes").value || "Session completed.",
+                        summary: notes,
                         overall_sentiment: parseFloat(posScore.toFixed(2)),
                         engagement_score: engagement,
                     });
+
+                    document.getElementById("rec-status-text").textContent = "Generating AI Summary…";
+                    try {
+                        if (window.utils) toast("Generating AI insights...", "info");
+                        await api.generateSummary(sessionId);
+                    } catch (e) {
+                        console.warn("AI generation failed or not configured:", e);
+                    }
+
                     toast("Session saved!", "success");
-                    setTimeout(() => { location.href = `session.html ? id = ${sessionId}`; }, 1200);
+                    setTimeout(() => { location.href = `session.html?id=${sessionId}`; }, 800);
                 } catch {
                     toast("Failed to save session data", "error");
                 }

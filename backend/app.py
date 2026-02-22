@@ -20,6 +20,13 @@ def create_app() -> Flask:
     from blueprints.api import api_bp
     app.register_blueprint(api_bp, url_prefix="/api")
 
+    try:
+        from AI.ai import ai_bp
+        app.register_blueprint(ai_bp, url_prefix="/api")
+        print("[AI] Gemini AI blueprint loaded successfully.")
+    except Exception as e:
+        print(f"[AI] Not available: {e}")
+
     # Import presage helpers (gracefully handles missing deepface/cv2)
     try:
         from presage_capture import start_presage_for_session, stop_presage_for_session

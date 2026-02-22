@@ -7,11 +7,11 @@ from recordings.audio import record_wav
 # Add repo root to Python path so "sync_engine" imports work
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, REPO_ROOT)
-from backend.database.database.db_manager import (
+from database.db_manager import (
     insert_session,
     insert_transcript_segments,
     upsert_speaker_map,
-    apply_speaker_map_to_segments,compute_and_write_mood_timeseries, insert_gemini_output
+    apply_speaker_map_to_segments, compute_and_write_mood_timeseries, insert_gemini_output
 )
 
 def to_ms(seconds: float) -> int:
@@ -136,6 +136,10 @@ def main():
 
     n = compute_and_write_mood_timeseries(db_path, session_id, window_ms=10_000)
     print("[ts] wrote:", n)
+
+    # Placeholder values for Gemini integration (to be replaced by actual analysis)
+    customer_summary_md = "Session summary pending AI analysis."
+    gemini_resp = "{}"
 
     insert_gemini_output(
         db_path, session_id,

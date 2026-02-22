@@ -588,7 +588,7 @@ ol {
     box-shadow: 0 0 8px var(--red-glow);
 }
 
-.timeline-event.wispr::before {
+.timeline-event.transcript::before {
     border-color: #3B82F6;
     background: #3B82F6;
 }
@@ -620,7 +620,7 @@ ol {
     color: var(--red);
 }
 
-.timeline-event.wispr .timeline-event__source {
+.timeline-event.transcript .timeline-event__source {
     color: #60A5FA;
 }
 

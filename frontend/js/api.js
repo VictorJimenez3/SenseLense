@@ -34,15 +34,18 @@
         createSession: (data) => request("POST", "/sessions", data),
         getSession: (id, events = false) => request("GET", `/sessions/${id}?events=${events}`),
         endSession: (id, data) => request("PATCH", `/sessions/${id}/end`, data),
+        generateSummary: (id) => request("POST", `/sessions/${id}/summary/generate`),
         startRecording: (data) => request("POST", "/record", data),
 
         // Events (pipeline ingestion point)
         ingestEvents: (sessionId, events) => request("POST", `/sessions/${sessionId}/events`, events),
 
         // Recording pipeline — browser → Flask → ElevenLabs / DeepFace
-        transcribeChunk: (sessionId, formData) => {
+        transcribeChunk: (sessionId, formData, offsetMs = 0) => {
             // formData is a FormData with an 'audio' file field
-            return fetch(API_BASE + `/transcribe/${sessionId}`, {
+            const url = new URL(API_BASE + `/transcribe/${sessionId}`);
+            url.searchParams.append("offset_ms", offsetMs);
+            return fetch(url, {
                 method: 'POST',
                 body: formData,   // no Content-Type header — browser sets boundary automatically
             }).then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.error); }));

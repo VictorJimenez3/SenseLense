@@ -53,6 +53,7 @@ class Session(db.Model):
         data = {
             "id": self.id,
             "client_id": self.client_id,
+            "client_name": self.client.name if self.client else "Unknown Client",
             "title": self.title,
             "started_at": self.started_at.isoformat(),
             "ended_at": self.ended_at.isoformat() if self.ended_at else None,

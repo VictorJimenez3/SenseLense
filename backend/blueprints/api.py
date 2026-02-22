@@ -142,7 +142,8 @@ def transcribe_chunk(session_id):
                 'speaker': 'speaker_0', 'text': raw_text, 'start': 0.0, 'end': 0.0
             })()]
 
-        timestamp_base = int(datetime.utcnow().timestamp() * 1000)
+        # Get the offset from the frontend (ms since session start)
+        offset_base = int(request.args.get("offset_ms", 0))
         seen_labels = []
 
         def label_to_role(label):
@@ -154,19 +155,20 @@ def transcribe_chunk(session_id):
         for seg in segments:
             speaker_label = getattr(seg, 'speaker', None) or 'unknown'
             text = (getattr(seg, 'text', '') or '').strip()
+            # start is seconds within THIS chunk
             start_ms = int((getattr(seg, 'start', 0) or 0) * 1000)
             if not text:
                 continue
             role = label_to_role(speaker_label)
             event = Event(
                 session_id=session_id,
-                timestamp_ms=timestamp_base + start_ms,
+                timestamp_ms=offset_base + start_ms,
                 source='elevenlabs',
                 speaker=role,
                 text=text,
             )
             db.session.add(event)
-            events_out.append({'speaker': role, 'text': text, 'start_ms': start_ms})
+            events_out.append({'speaker': role, 'text': text, 'start_ms': offset_base + start_ms})
 
         db.session.commit()
         print(f"[elevenlabs] Stored {len(events_out)} segments for session {session_id}")
