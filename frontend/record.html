@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SenseLense — Record Session</title>
     <meta name="description"
-        content="Capture live conversation with Presage emotion tracking and Wispr transcription." />
+        content="Capture live conversations with DeepFace emotion analysis and ElevenLabs transcription." />
     <link rel="stylesheet" href="css/styles.css" />
     <script>
         /* Apply saved theme + accent color immediately */
@@ -89,34 +89,6 @@
             border-radius: 50%;
             background: var(--negative);
             animation: pulse-dot 1s infinite;
-        }
-
-        .emotion-chip-row {
-            position: absolute;
-            bottom: 14px;
-            left: 14px;
-            right: 14px;
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .live-chip {
-            padding: 4px 12px;
-            border-radius: 99px;
-            font-size: 11px;
-            font-weight: 700;
-            backdrop-filter: blur(8px);
-            background: rgba(0, 0, 0, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
-        }
-
-        .live-chip.active {
-            background: rgba(204, 0, 0, 0.3);
-            border-color: var(--red);
-            color: #fff;
         }
 
         .transcript-feed {
@@ -513,8 +485,6 @@
                                 LIVE · <span id="badge-timer">00:00</span>
                             </div>
 
-                            <div class="emotion-chip-row" id="emotion-chips" style="display:none">
-                            </div>
                         </div>
 
                         <!-- Transcript Feed -->
@@ -522,7 +492,7 @@
                             <div
                                 style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
                                 <div class="card__title" style="margin:0">Live Transcript</div>
-                                <span class="badge blue" id="transcript-source">Wispr / ElevenLabs</span>
+                                <span class="badge blue" id="transcript-source">ElevenLabs</span>
                             </div>
                             <div class="transcript-feed" style="padding:16px 20px;min-height:160px"
                                 id="transcript-wrap">
@@ -550,8 +520,8 @@
                             <div id="rec-status-text" style="font-size:15px;font-weight:600;color:var(--text-muted)">
                                 Ready to Record</div>
                             <div style="font-size:12px;color:var(--text-muted);max-width:220px;text-align:center">
-                                Select a client above, then press Start Recording. Presage + Wispr will capture the
-                                session automatically.
+                                Select a client above, then press Start Recording. DeepFace + ElevenLabs will capture
+                                the session automatically.
                             </div>
                         </div>
 
@@ -611,7 +581,10 @@
 
                         <!-- Live Emotion Breakdown (DeepFace) -->
                         <div class="card">
-                            <div class="card__title" style="margin-bottom:16px">Emotion Tracker</div>
+                            <div class="card__title" style="margin-bottom:16px">Emotion Tracker
+                                <span
+                                    style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:8px">DeepFace</span>
+                            </div>
                             <div id="emotion-tracker">
                                 <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0">
                                     Will populate during recording
@@ -751,7 +724,7 @@
             const tsMs = timerSecs * 1000;
             const valenceNorm = (avgArr(mcBuf.valence) - 50) / 50; // convert 0-100 → -1..1
 
-            // Store as a presage-compatible event with extra data in the text field
+            // Store a MorphCast event with extra data in the text field
             window.api.ingestEvents(sessionId, [{
                 timestamp_ms: tsMs,
                 source: 'morphcast',
@@ -829,12 +802,6 @@
                     domEl.style.color = MC_EMO_COLORS[label] || 'var(--text-primary)';
                 }
 
-                // Also feed the legacy emotion tracker / chips
-                const legacyEmo = label.toLowerCase();
-                Object.values(CHIP_IDS).forEach(id => document.getElementById(id)?.classList.remove('active'));
-                document.getElementById(CHIP_IDS[legacyEmo] || 'chip-neutral')?.classList.add('active');
-                if (legacyEmo in EMOTION_COUNTS) EMOTION_COUNTS[legacyEmo]++;
-                renderEmotionTracker();
             });
 
             window.addEventListener(CY.modules().FACE_ATTENTION.eventName, evt => {
@@ -967,56 +934,37 @@
             }, 10000);
         }
 
-        // ── Real Emotion Tracking — polls Presage events from Flask ──────
-        const CHIP_IDS = {
-            neutral: "chip-neutral", happy: "chip-happy",
-            confused: "chip-confused", engaged: "chip-engaged", negative: "chip-negative"
-        };
+        // ── DeepFace emotion tracking — sends a webcam frame to Flask every 2.4s
+        const FRAME_INTERVAL_MS = 2400;
+        let frameHandle = null;
         const EMOTION_COUNTS = { neutral: 0, happy: 0, confused: 0, engaged: 0, negative: 0 };
         const EMOTION_COLORS = {
             neutral: "var(--text-muted)", happy: "var(--positive)",
             confused: "var(--neutral)", engaged: "#60A5FA", negative: "var(--negative)"
         };
 
-        let emotionHandle = null;
-        let lastEmotionEventId = 0;
-
-        function startEmotionPoll() {
-            document.getElementById("emotion-chips").style.display = "flex";
-            pollEmotions(); // immediate first poll
-            emotionHandle = setInterval(pollEmotions, 2400);
+        function startFrameCapture() {
+            analyzeCurrentFrame();
+            frameHandle = setInterval(analyzeCurrentFrame, FRAME_INTERVAL_MS);
         }
 
-        async function pollEmotions() {
-            if (!sessionId) return;
+        function stopFrameCapture() {
+            clearInterval(frameHandle);
+        }
+
+        async function analyzeCurrentFrame() {
+            if (!recording || !sessionId) return;
+            const vid = document.getElementById("camera-video");
+            if (!vid.videoWidth) return;
+            const w = 320, h = Math.round(vid.videoHeight * (w / vid.videoWidth));
+            frameCanvas.width = w; frameCanvas.height = h;
+            frameCtx.drawImage(vid, 0, 0, w, h);
+            const dataUrl = frameCanvas.toDataURL("image/jpeg", 0.7);
             try {
-                const data = await window.api.getSession(sessionId, true);
-                const presageEvents = (data.events || []).filter(e => e.source === "presage");
-                if (!presageEvents.length) return;
-
-                // Only process new events since last poll
-                const newEvents = presageEvents.filter(e => e.id > lastEmotionEventId);
-                if (!newEvents.length) return;
-                lastEmotionEventId = Math.max(...presageEvents.map(e => e.id));
-
-                const latest = newEvents[newEvents.length - 1];
-                const emo = latest.emotion || "neutral";
-
-                // Update chip highlight
-                Object.values(CHIP_IDS).forEach(id => document.getElementById(id)?.classList.remove("active"));
-                document.getElementById(CHIP_IDS[emo] || "chip-neutral")?.classList.add("active");
-
-                // Accumulate counts
-                newEvents.forEach(e => {
-                    const k = e.emotion || "neutral";
-                    if (k in EMOTION_COUNTS) EMOTION_COUNTS[k]++;
-                });
+                const { emotion } = await window.api.analyzeFrame(sessionId, dataUrl, timerSecs * 1000);
+                if (emotion in EMOTION_COUNTS) EMOTION_COUNTS[emotion]++;
                 renderEmotionTracker();
-            } catch { /* backend not ready yet */ }
-        }
-
-        function stopEmotionPoll() {
-            clearInterval(emotionHandle);
+            } catch (err) { console.warn("[DeepFace] frame error:", err.message); }
         }
 
         function renderEmotionTracker() {
@@ -1098,8 +1046,6 @@
                 try {
                     const sess = await api.createSession({ client_id: parseInt(clientId), title });
                     sessionId = sess.id;
-                    // Trigger backend transcription script
-                    api.startRecording({ session_id: sessionId, record_seconds: 900 }).catch(console.error);
                 } catch {
                     toast("Failed to create session — backend running?", "error");
                     return;
@@ -1117,7 +1063,7 @@
 
                 await startCamera();
                 startTimer();
-                startEmotionPoll();
+                startFrameCapture();
                 startTranscriptPoll();
                 toast("Session started!", "success");
 
@@ -1126,7 +1072,7 @@
                 recording = false;
                 stopTimer();
                 stopCamera();
-                stopEmotionPoll();
+                stopFrameCapture();
                 stopTranscriptPoll();
 
                 document.getElementById("rec-ring").classList.remove("active");
@@ -1134,16 +1080,15 @@
                 document.getElementById("rec-btn").className = "btn btn-primary btn-lg";
                 document.getElementById("rec-btn-text").textContent = "Start Recording";
                 document.getElementById("rec-status-text").textContent = "Session ended";
-                document.getElementById("emotion-chips").style.display = "none";
 
-                // Compute sentiment: blend MorphCast valence avg with legacy emotion counts
+                // Compute sentiment: blend MorphCast valence avg with DeepFace counts
                 const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0) || 1;
-                const legacyScore = ((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged) / total) * 2 - 1;
+                const deepFaceScore = ((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged) / total) * 2 - 1;
                 const mcValenceAvg = mcBuf.valence.length ? avgArr(mcBuf.valence) : null;
-                // If MorphCast ran, use its valence (0-100 → -1..1); otherwise fall back to legacy
+                // If MorphCast ran, use its valence (0-100 → -1..1); otherwise fall back to DeepFace counts
                 const posScore = mcValenceAvg !== null
                     ? parseFloat(((mcValenceAvg - 50) / 50).toFixed(2))
-                    : parseFloat(legacyScore.toFixed(2));
+                    : parseFloat(deepFaceScore.toFixed(2));
                 const engagement = Math.round(((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged + EMOTION_COUNTS.neutral * 0.5) / total) * 100);
 
                 try {

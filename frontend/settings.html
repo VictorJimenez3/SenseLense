@@ -279,7 +279,7 @@
                     </div>
                 </div>
 
-                <!-- ── Presage ── -->
+                <!-- ── DeepFace ── -->
                 <div class="settings-section">
                     <div class="settings-section__header">
                         <div class="settings-section__icon">
@@ -290,16 +290,16 @@
                             </svg>
                         </div>
                         <div>
-                            <div class="settings-section__title">Presage Emotion Tracking</div>
+                            <div class="settings-section__title">DeepFace Emotion Tracking</div>
                             <div class="settings-section__sub">Face and emotion analysis via webcam</div>
                         </div>
                     </div>
                     <div class="settings-row">
                         <div>
                             <div class="settings-row__label">Capture Interval</div>
-                            <div class="settings-row__desc">How often Presage samples the camera (ms)</div>
+                            <div class="settings-row__desc">How often DeepFace samples the camera (ms)</div>
                         </div>
-                        <input type="text" id="cfg-presage-interval" placeholder="2400"
+                        <input type="text" id="cfg-deepface-interval" placeholder="2400"
                             style="width:100px;text-align:center" />
                     </div>
                     <div class="settings-row">
@@ -383,7 +383,7 @@
                             <span class="badge">Flask</span>
                             <span class="badge">SQLite</span>
                             <span class="badge blue">ElevenLabs</span>
-                            <span class="badge red">Presage</span>
+                            <span class="badge red">DeepFace</span>
                         </div>
                     </div>
                     <div class="settings-row">
@@ -526,7 +526,7 @@
             const data = {
                 backendUrl: document.getElementById("cfg-backend-url").value.trim(),
                 elevenKey: document.getElementById("cfg-eleven-key").value.trim(),
-                presageInterval: document.getElementById("cfg-presage-interval").value.trim(),
+                deepfaceInterval: document.getElementById("cfg-deepface-interval").value.trim(),
                 defaultTitle: document.getElementById("cfg-default-title").value.trim(),
             };
             localStorage.setItem("sl-settings", JSON.stringify(data));
@@ -559,7 +559,7 @@
             const saved = JSON.parse(localStorage.getItem("sl-settings") || "{}");
             document.getElementById("cfg-backend-url").value = saved.backendUrl || "http://localhost:5050";
             document.getElementById("cfg-eleven-key").value = saved.elevenKey || "";
-            document.getElementById("cfg-presage-interval").value = saved.presageInterval || "2400";
+            document.getElementById("cfg-deepface-interval").value = saved.deepfaceInterval || "2400";
             document.getElementById("cfg-default-title").value = saved.defaultTitle || "";
 
             checkApi();

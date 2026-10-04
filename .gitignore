@@ -5,7 +5,7 @@ __pycache__/
 venv/
 
 # Environment / secrets — teammates should create their own
-backend/Transcriptions/.env
+backend/.env
 *.env
 
 # Database files (auto-created by setup.sh)

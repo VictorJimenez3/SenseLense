@@ -404,7 +404,7 @@
     {
       badge: 'Welcome',
       title: 'Welcome to SenseLense',
-      desc: 'SenseLense is your AI-powered sales conversation intelligence platform. It syncs facial emotion data from <strong>Presage</strong> and speech transcriptions from <strong>ElevenLabs</strong> into a unified timeline — giving you real insights after every meeting.',
+      desc: 'SenseLense is your AI-powered sales conversation intelligence platform. It syncs facial emotion data from <strong>DeepFace</strong> and speech transcriptions from <strong>ElevenLabs</strong> into a unified timeline — giving you real insights after every meeting.',
       illustration: `
         <div class="il-welcome">
           <div class="rings">
@@ -443,7 +443,7 @@
     {
       badge: 'Step 3 of 7 — Sessions',
       title: 'Review Past Sessions',
-      desc: 'Every recorded meeting is saved as a <strong>Session</strong>. Click any session to view its full emotional timeline — a chronological log of Presage emotion events and ElevenLabs transcript chunks, synced by millisecond.',
+      desc: 'Every recorded meeting is saved as a <strong>Session</strong>. Click any session to view its full emotional timeline — a chronological log of DeepFace emotion events and ElevenLabs transcript chunks, synced by millisecond.',
       illustration: `
         <div class="il-timeline">
           <div class="il-tl-event">
@@ -463,7 +463,7 @@
     {
       badge: 'Step 4 of 7 — New Session',
       title: 'Start a Recording',
-      desc: 'Hit <strong>New Session</strong> to begin capturing. <span style="color:#CC0000">Presage</span> watches the camera and logs facial emotion events. <span style="color:#60A5FA">ElevenLabs</span> transcribes speech in real-time. Both streams are stamped and merged automatically.',
+      desc: 'Hit <strong>New Session</strong> to begin capturing. <span style="color:#CC0000">DeepFace</span> watches the camera and logs facial emotion events. <span style="color:#60A5FA">ElevenLabs</span> transcribes speech in real-time. Both streams are stamped and merged automatically.',
       illustration: `
         <div class="il-record">
           <div class="il-cam-ring"><div class="il-cam-inner"></div></div>
@@ -477,7 +477,7 @@
     {
       badge: 'Step 5 of 7 — Emotion Tracking',
       title: 'Live Emotion Intelligence',
-      desc: 'During a recording, <strong>Presage</strong> samples the camera every 2.4 seconds. Each detected emotion is tagged, timestamped, and stored alongside the transcript. Chips update live so you can follow the meeting\'s mood in the moment.',
+      desc: 'During a recording, <strong>DeepFace</strong> samples the camera every 2.4 seconds. Each detected emotion is tagged, timestamped, and stored alongside the transcript. Emotion counts update live so you can follow the meeting\'s mood in the moment.',
       illustration: `
         <div class="il-emotions">
           <div class="il-chip happy">Happy</div>
@@ -501,7 +501,7 @@
     {
       badge: 'Step 7 of 7 — Settings',
       title: 'Customize Everything',
-      desc: 'Head to <strong>Settings</strong> to configure your ElevenLabs API key, Presage capture interval, backend URL, and personalize the look with a custom accent color and light/dark theme — all saved in your browser.',
+      desc: 'Head to <strong>Settings</strong> to configure your ElevenLabs API key, DeepFace capture interval, backend URL, and personalize the look with a custom accent color and light/dark theme — all saved in your browser.',
       illustration: `
         <div class="il-settings">
           <div class="il-color-wheel"></div>

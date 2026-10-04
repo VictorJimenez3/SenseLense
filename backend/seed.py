@@ -74,7 +74,7 @@ def seed_data():
         ]
 
         for session in sessions:
-            # Add some emotion samples (Presage)
+            # Add some emotion samples (DeepFace)
             current_ms = 0
             while current_ms < 300000: # 5 minutes of data
                 emo = random.choice(emotions)
@@ -84,7 +84,7 @@ def seed_data():
                 event = Event(
                     session_id=session.id,
                     timestamp_ms=current_ms,
-                    source="presage",
+                    source="deepface",
                     emotion=emo,
                     valence=max(-1.0, min(1.0, valence))
                 )

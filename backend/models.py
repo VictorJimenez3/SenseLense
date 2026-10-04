@@ -1,4 +1,4 @@
-# FILE: models.py - Database blueprint. Defines tables for Clients, Sessions, and ElevenLabs/Presage events.
+# FILE: models.py - Database blueprint. Defines tables for Clients, Sessions, and DeepFace/ElevenLabs events.
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -33,7 +33,7 @@ class Client(db.Model):
 class Session(db.Model):
     """
     A recorded sales session.
-    Holds a timeline of synced Presage emotion events + ElevenLabs transcript chunks.
+    Holds a timeline of synced DeepFace emotion events + ElevenLabs transcript chunks.
     """
     __tablename__ = "sessions"
 
@@ -69,21 +69,21 @@ class Session(db.Model):
 class Event(db.Model):
     """
     A single timestamped event on the session timeline.
-    source: 'presage' (emotion/reaction) | 'elevenlabs' (transcript chunk)
+    source: 'deepface' (emotion/reaction) | 'elevenlabs' (transcript chunk)
     """
     __tablename__ = "events"
 
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
     timestamp_ms = db.Column(db.Integer, nullable=False)   # ms since session start
-    source = db.Column(db.String(30), nullable=False)       # 'presage' | 'elevenlabs'
+    source = db.Column(db.String(30), nullable=False)       # 'deepface' | 'elevenlabs'
 
-    # Presage fields
+    # DeepFace fields
     emotion = db.Column(db.String(40))          # e.g. "happy", "neutral", "confused"
     valence = db.Column(db.Float)               # -1.0 → 1.0
 
     # ElevenLabs / transcript fields
-    speaker = db.Column(db.String(20))          # 'rep' | 'client'
+    speaker = db.Column(db.String(20))          # 'seller' | 'client'
     text = db.Column(db.Text)
 
     session = db.relationship("Session", back_populates="events")

@@ -1,17 +1,15 @@
-# FILE: api.py - The logic center. This is where you plug in Presage and ElevenLabs data.
+# All REST endpoints: health, clients, sessions, events, DeepFace frame analysis, ElevenLabs transcription, insights.
 import os
 import base64
 import tempfile
 import threading
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from models import db, Client, Session, Event
 from datetime import datetime
 
 api_bp = Blueprint("api", __name__)
-
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "sk_abeee70f4b3aea3e51d9f4e375fb196c0ceaf31ae812410d")
 
 # ── DeepFace async executor ───────────────────────────────────────────────────
 # All DeepFace work runs in this pool so Flask threads are never blocked.
@@ -42,9 +40,9 @@ def _warmup_deepface():
                          detector_backend='opencv')
         with _df_lock:
             _df_ready = True
-        print("[presage] DeepFace model warmed up ✓")
+        print("[deepface] DeepFace model warmed up ✓")
     except Exception as e:
-        print(f"[presage] Warmup failed (non-fatal): {e}")
+        print(f"[deepface] Warmup failed (non-fatal): {e}")
 
 
 # Kick off warmup in background immediately on import
@@ -74,7 +72,7 @@ def _run_deepface(frame_bytes: bytes):
         valence = VALENCE_MAP.get(dominant, 0.0)
         return mapped, valence, dominant
     except Exception as e:
-        print(f"[presage] DeepFace error: {e}")
+        print(f"[deepface] DeepFace error: {e}")
         return 'neutral', 0.0, 'neutral'
 
 
@@ -98,6 +96,10 @@ def transcribe_chunk(session_id):
     """
     Session.query.get_or_404(session_id)
 
+    api_key = current_app.config["ELEVENLABS_API_KEY"]
+    if not api_key:
+        return jsonify({"error": "ELEVENLABS_API_KEY not configured"}), 503
+
     if 'audio' not in request.files:
         return jsonify({"error": "missing 'audio' file field"}), 400
 
@@ -113,7 +115,7 @@ def transcribe_chunk(session_id):
 
     try:
         from elevenlabs.client import ElevenLabs
-        client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+        client = ElevenLabs(api_key=api_key)
 
         # Write to temp file — ElevenLabs SDK needs a seekable file
         with tempfile.NamedTemporaryFile(suffix=f'.{ext}', delete=False) as tmp:
@@ -222,13 +224,14 @@ def analyze_frame(session_id):
         return jsonify({"error": "invalid image"}), 400
 
     # Store in DB (non-blocking — use a background thread)
+    app = current_app._get_current_object()
+
     def _store():
-        from app import app
         with app.app_context():
             event = Event(
                 session_id=session_id,
                 timestamp_ms=timestamp_ms,
-                source='presage',
+                source='deepface',
                 emotion=mapped,
                 valence=valence,
             )
@@ -350,16 +353,16 @@ def ingest_events(session_id):
 def get_insights(session_id):
     session = Session.query.get_or_404(session_id)
     events = session.events
-    presage_events = [e for e in events if e.source == "presage" and e.valence is not None]
+    deepface_events = [e for e in events if e.source == "deepface" and e.valence is not None]
     elevenlabs_events = [e for e in events if e.source == "elevenlabs"]
 
     avg_valence = (
-        sum(e.valence for e in presage_events) / len(presage_events)
-        if presage_events else 0.0
+        sum(e.valence for e in deepface_events) / len(deepface_events)
+        if deepface_events else 0.0
     )
 
     emotion_counts = {}
-    for e in presage_events:
+    for e in deepface_events:
         if e.emotion:
             emotion_counts[e.emotion] = emotion_counts.get(e.emotion, 0) + 1
 
@@ -371,5 +374,5 @@ def get_insights(session_id):
         "avg_valence": round(avg_valence, 3),
         "emotion_breakdown": emotion_counts,
         "transcript_chunks": len(elevenlabs_events),
-        "presage_samples": len(presage_events),
+        "deepface_samples": len(deepface_events),
     })

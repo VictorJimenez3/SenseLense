@@ -1,25 +1,10 @@
-import os
 import json
-import time
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
-from flask import Blueprint, jsonify, request
-from dotenv import load_dotenv
+from flask import Blueprint, current_app, jsonify, request
 import google.generativeai as genai
 
-# Go up one directory to import from the main Flask app
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import db, Session, Event
-
-env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-load_dotenv(env_path)
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 ai_bp = Blueprint("ai", __name__)
 
@@ -37,10 +22,10 @@ def compact_transcript(events: List[Event], max_chars: int = 25000) -> str:
     return blob[:max_chars]
 
 def get_mood_data(events: List[Event]) -> List[Dict[str, Any]]:
-    # Just extract a clean list of presage events to pass to the prompt
+    # Just extract a clean list of DeepFace events to pass to the prompt
     moods = []
     for e in events:
-        if e.source == 'presage' and e.emotion:
+        if e.source == 'deepface' and e.emotion:
             moods.append({
                 "t_ms": e.timestamp_ms,
                 "emotion": e.emotion,
@@ -55,10 +40,12 @@ def generate_summary(session_id: int) -> Dict[str, Any]:
     transcript_text = compact_transcript(events)
     moods = get_mood_data(events)
     
-    if not GEMINI_API_KEY:
+    api_key = current_app.config["GEMINI_API_KEY"]
+    if not api_key:
         return {"error": "Missing GEMINI_API_KEY"}
 
-    model = genai.GenerativeModel(MODEL_NAME)
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(current_app.config["GEMINI_MODEL"])
 
     prompt = f"""
 You are SenseLense AI, an expert sales analyst.

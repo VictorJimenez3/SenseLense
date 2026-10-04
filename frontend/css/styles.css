@@ -584,7 +584,7 @@ ol {
     z-index: 1;
 }
 
-.timeline-event.presage::before {
+.timeline-event.deepface::before {
     border-color: var(--red);
     background: var(--red);
     box-shadow: 0 0 8px var(--red-glow);
@@ -618,7 +618,7 @@ ol {
     margin-bottom: 4px;
 }
 
-.timeline-event.presage .timeline-event__source {
+.timeline-event.deepface .timeline-event__source {
     color: var(--red);
 }
 

@@ -39,7 +39,6 @@
         endSession: (id, data) => request("PATCH", `/sessions/${id}/end`, data),
         deleteSession: (id) => request("DELETE", `/sessions/${id}`),
         generateSummary: (id) => request("POST", `/sessions/${id}/summary/generate`),
-        startRecording: (data) => request("POST", "/record", data),
 
         // Events (pipeline ingestion point)
         ingestEvents: (sessionId, events) => request("POST", `/sessions/${sessionId}/events`, events),

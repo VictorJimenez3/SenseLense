@@ -1,87 +1,36 @@
 #!/usr/bin/env bash
-# setup.sh — One-command setup for SenseLense backend
-# Usage: bash setup.sh
-# Works on macOS and Linux.
+set -e
 
-set -e  # exit on first error
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR/backend"
 
-echo ""
-echo "╔══════════════════════════════════════╗"
-echo "║     SenseLense — Setup Script        ║"
-echo "╚══════════════════════════════════════╝"
-echo ""
-
-# ── 1. Check Python ───────────────────────────────────────────────────────────
-if ! command -v python3 &>/dev/null; then
-    echo "❌  python3 not found. Install Python 3.9+ from https://python.org"
-    exit 1
-fi
-PY_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-echo "✓  Python $PY_VERSION found"
-
-# ── 2. Create virtual environment ─────────────────────────────────────────────
-BACKEND_DIR="$(cd "$(dirname "$0")" && pwd)"
-VENV="$BACKEND_DIR/venv"
-
-if [ ! -d "$VENV" ]; then
-    echo "→  Creating virtual environment..."
-    python3 -m venv "$VENV"
-    echo "✓  venv created at $VENV"
+if command -v uv >/dev/null 2>&1; then
+    if [ ! -d venv ]; then
+        uv venv venv --python 3.12
+    fi
+    uv pip install --python venv/bin/python -r requirements.txt
 else
-    echo "✓  venv already exists"
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "Python 3.10–3.12 is required. Install Python or uv, then retry." >&2
+        exit 1
+    fi
+    if ! python3 -c 'import sys; raise SystemExit(0 if (3, 10) <= sys.version_info[:2] < (3, 13) else 1)'; then
+        echo "Python 3.10–3.12 is required; found $(python3 --version)." >&2
+        exit 1
+    fi
+    if [ ! -d venv ]; then
+        python3 -m venv venv
+    fi
+    venv/bin/pip install -r requirements.txt
 fi
 
-source "$VENV/bin/activate"
-
-# ── 3. Upgrade pip ────────────────────────────────────────────────────────────
-echo "→  Upgrading pip..."
-pip install --quiet --upgrade pip
-
-# ── 4. Install dependencies ───────────────────────────────────────────────────
-echo "→  Installing Python dependencies (this may take a few minutes first time)..."
-pip install --quiet -r "$BACKEND_DIR/requirements.txt"
-echo "✓  Dependencies installed"
-
-# ── 5. Create .env if it doesn't exist ───────────────────────────────────────
-ENV_FILE="$BACKEND_DIR/Transcriptions/.env"
-if [ ! -f "$ENV_FILE" ]; then
-    echo "→  Creating Transcriptions/.env from template..."
-    cat > "$ENV_FILE" <<'EOF'
-# Paste your API keys here
-ELEVENLABS_API_KEY=your_elevenlabs_key_here
-PRESAGE_API_KEY=your_presage_key_here
-
-# These are set automatically by Flask at runtime — you can leave them as-is
-SESSION_ID=demo-session-001
-ADPitch_DB=../instance/senselense.db
-RECORD_SECONDS=900
-EOF
-    echo "⚠️   Created Transcriptions/.env — add your API keys before running!"
-else
-    echo "✓  Transcriptions/.env already exists"
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo "Created backend/.env; add your ElevenLabs and Gemini API keys."
 fi
 
-# ── 6. Initialize the database ───────────────────────────────────────────────
-echo "→  Initializing database..."
-cd "$BACKEND_DIR"
-python3 -c "
-from app import app
-with app.app_context():
-    from models import db
-    db.create_all()
-    print('✓  Database ready')
-"
+venv/bin/python -c "import app"
 
-# ── 7. Done ───────────────────────────────────────────────────────────────────
-echo ""
-echo "╔══════════════════════════════════════╗"
-echo "║        Setup complete! ✅             ║"
-echo "╚══════════════════════════════════════╝"
-echo ""
-echo "To start the backend:"
-echo "  cd backend"
-echo "  source venv/bin/activate"
-echo "  flask run"
-echo ""
-echo "Then open:  frontend/login.html  in your browser"
-echo ""
+if [ "${1:-}" = "--seed" ]; then
+    venv/bin/python seed.py
+fi

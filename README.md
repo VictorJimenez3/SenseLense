@@ -1,167 +1,119 @@
-# SenseLense 🎯
+# SenseLense
 
-> Real-time sales conversation intelligence for ADP — powered by ElevenLabs (transcription) and DeepFace (emotion detection).
+SenseLense is a sales-call dashboard combining DeepFace facial emotion analysis,
+in-browser MorphCast analytics, ElevenLabs transcription, and Gemini summaries.
+Flask stores clients, sessions, transcript segments, and emotion events in SQLite.
 
----
+## Prerequisites
 
-## What it does
+- Python 3.10–3.12 (TensorFlow does not support Python 3.13 yet).
+- [uv](https://docs.astral.sh/uv/) is recommended; setup also supports pip.
 
-SenseLense listens to a sales call through your browser's microphone and webcam, then in real-time:
-- **Transcribes** the conversation with speaker diarization (seller vs client) via ElevenLabs
-- **Detects emotions** from the client's face every 2.4 seconds via DeepFace
-- **Stores everything** in a local SQLite database with millisecond timestamps
-- **Displays** a live dashboard with emotion chips, valence bars, and a growing transcript
+## Setup
 
----
-
-## Setup (teammates — start here)
-
-### Prerequisites
-- **Python 3.9+** — check with `python3 --version`
-- **Git** — to clone the repo
-
-### One-command setup
+From the repository root:
 
 ```bash
-git clone https://github.com/VictorJimenez3/SenseLense.git
-cd SenseLense
-
-# Run the setup script — creates venv, installs all deps, inits DB
 bash setup.sh
 ```
 
-That's it. The script will:
-1. Create a Python virtual environment in `backend/venv/`
-2. Install all dependencies (Flask, ElevenLabs, DeepFace, TensorFlow, OpenCV…)
-3. Create a `backend/Transcriptions/.env` template if one doesn't exist
-4. Initialize the SQLite database
+Add `--seed` to also load sample clients, sessions, and events:
 
-> ⚠️ **First run takes ~3-5 minutes** — TensorFlow + DeepFace are large downloads.
-
----
-
-### Add your API keys
-
-Edit `backend/Transcriptions/.env`:
-
-```env
-ELEVENLABS_API_KEY=your_key_here
-PRESAGE_API_KEY=your_key_here
-```
-
-Get your ElevenLabs key at [elevenlabs.io/app/settings/api-keys](https://elevenlabs.io/app/settings/api-keys)
-
-> Keys are already set in `.env` if you're working from Eren's machine.
-
----
-
-### Run the app
-
-**Terminal 1 — Backend:**
 ```bash
-cd backend
-source venv/bin/activate
-flask run
-# → Running on http://127.0.0.1:5050
+bash setup.sh --seed
 ```
 
-**Browser:**
+## API keys
+
+Setup copies `backend/.env.example` to `backend/.env` if needed. Add your keys:
+
+- `ELEVENLABS_API_KEY`: [ElevenLabs API Keys](https://elevenlabs.io/app/settings/api-keys)
+- `GEMINI_API_KEY`: [Google AI Studio](https://aistudio.google.com/apikey)
+- `GEMINI_MODEL` defaults to `gemini-2.5-flash`; `SECRET_KEY` is used by Flask.
+
+## Run
+
+From the repository root, start both local servers:
+
 ```bash
-open frontend/login.html
-# or just double-click the file in Finder
+bash run.sh
 ```
 
----
+Or run them in separate terminals:
+
+```bash
+# Terminal 1
+cd backend && source venv/bin/activate && flask run
+# Terminal 2
+cd frontend && python3 -m http.server 8080
+```
+
+Open <http://localhost:8080/login.html>. **Do not open HTML files via
+`file://`**: `frontend/js/api.js` uses the production API URL unless the
+hostname is `localhost` or `127.0.0.1`.
 
 ## Project structure
 
-```
+```text
 SenseLense/
 ├── backend/
-│   ├── app.py                  # Flask app factory + /api/record endpoint
-│   ├── models.py               # SQLAlchemy models (Client, Session, Event)
-│   ├── config.py               # Configuration (DB URI, secret key)
-│   ├── requirements.txt        # All Python dependencies
-│   ├── .flaskenv               # Flask environment (port 5050, threading on)
-│   ├── blueprints/
-│   │   └── api.py              # All REST endpoints
-│   ├── Transcriptions/
-│   │   ├── main.py             # Standalone ElevenLabs recording script
-│   │   └── .env                # API keys (git-ignored)
-│   ├── database/
-│   │   ├── schema.sql          # Raw SQL schema (for reference)
-│   │   └── db_manager.py       # Low-level SQLite helpers
-│   └── presage_capture.py      # Standalone webcam emotion capture
+│   ├── .env.example
+│   ├── .dockerignore
+│   ├── .flaskenv
+│   ├── Dockerfile
+│   ├── app.py, config.py, models.py, seed.py, requirements.txt
+│   └── blueprints/{ai.py, api.py}
 ├── frontend/
-│   ├── login.html              # Entry point — open this in browser
-│   ├── index.html              # Dashboard
-│   ├── clients.html            # Client list + Add Client
-│   ├── client.html             # Individual client profile
-│   ├── sessions.html           # Session history
-│   ├── record.html             # Live recording session
-│   ├── session.html            # Session detail / transcript viewer
-│   ├── settings.html           # App settings
-│   ├── css/styles.css          # Full design system
-│   └── js/
-│       ├── api.js              # Flask API client (window.api)
-│       ├── utils.js            # Shared utilities (window.utils)
-│       └── auth.js             # Local session management
-├── setup.sh                    # ← Run this first
-└── README.md
+│   ├── login.html, index.html, clients.html, client.html
+│   ├── sessions.html, session.html, record.html, settings.html
+│   ├── assets/adp-logo.svg
+│   ├── css/styles.css
+│   └── js/{api.js, auth.js, theme.js, tutorial.js, utils.js}
+├── run.sh
+└── setup.sh
 ```
 
----
+## Data pipeline
 
-## How the real-time pipeline works
-
-```
+```text
 Browser (record.html)
-  │
-  ├── every 2.4s → canvas JPEG → POST /api/analyze-frame/<session_id>
-  │                                   └─ DeepFace (opencv, pre-warmed)
-  │                                       └─ emotion + valence → DB → UI chips update
-  │
-  └── every 10s  → WebM audio → POST /api/transcribe/<session_id>
-                                     └─ ElevenLabs scribe_v2 (diarized)
-                                         └─ text segments → DB → transcript feed
+  ├── every 2.4s: JPEG → POST /api/analyze-frame/<id> → DeepFace → SQLite
+  ├── every 10s: WebM → POST /api/transcribe/<id> → ElevenLabs scribe_v2 → SQLite
+  └── every 20s: MorphCast → POST /api/sessions/<id>/events → SQLite
+
+End → PATCH /api/sessions/<id>/end
+     → POST /api/sessions/<id>/summary/generate → Gemini
 ```
 
----
-
-## API endpoints
+## API
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/health` | Backend status + DeepFace ready flag |
-| `GET` | `/api/clients` | List all clients |
-| `POST` | `/api/clients` | Create a client |
-| `GET` | `/api/sessions` | List all sessions |
-| `POST` | `/api/sessions` | Create a session |
-| `PATCH` | `/api/sessions/<id>/end` | End a session |
-| `GET` | `/api/sessions/<id>?events=true` | Get session + events |
-| `POST` | `/api/transcribe/<session_id>` | Receive audio → ElevenLabs |
-| `POST` | `/api/analyze-frame/<session_id>` | Receive JPEG → DeepFace |
-| `POST` | `/api/record` | Trigger background transcription |
-| `GET` | `/api/sessions/<id>/insights` | Emotion + transcript summary |
+| --- | --- | --- |
+| `GET` | `/api/health` | Backend status and DeepFace readiness |
+| `GET` / `POST` | `/api/clients` | List or create clients |
+| `GET` | `/api/clients/<id>` | Get a client and its sessions |
+| `GET` / `POST` | `/api/sessions` | List or create sessions |
+| `GET` | `/api/sessions/<id>?events=true` | Get a session and its events |
+| `PATCH` | `/api/sessions/<id>/end` | End a session and update metrics |
+| `DELETE` | `/api/sessions/<id>` | Delete a session |
+| `POST` | `/api/sessions/<id>/events` | Store emotion or transcript events |
+| `POST` | `/api/transcribe/<id>` | Transcribe audio with ElevenLabs |
+| `POST` | `/api/analyze-frame/<id>` | Analyze a JPEG frame with DeepFace |
+| `GET` | `/api/sessions/<id>/insights` | Get session emotion and transcript metrics |
+| `POST` | `/api/sessions/<id>/summary/generate` | Generate a summary with Gemini |
 
----
+## Deploy
+
+- Backend: Docker (see `backend/Dockerfile`).
+- Frontend: static — any host; update the production `API_BASE` in
+  `frontend/js/api.js`.
 
 ## Troubleshooting
 
-**Backend offline (red dot in sidebar)**
-```bash
-cd backend && source venv/bin/activate && flask run
-```
-
-**`ModuleNotFoundError`**
-```bash
-cd backend && source venv/bin/activate && pip install -r requirements.txt
-```
-
-**Camera/mic not working**
-- Allow camera + microphone when the browser asks
-- Use Chrome or Edge (Safari has MediaRecorder limitations)
-
-**First emotion detection is slow**
-- Normal — DeepFace loads the TensorFlow model on startup (~10s)
-- Subsequent frames are fast (opencv detector, thread pool)
+- **Backend offline:** check Flask on port 5050 and
+  `http://localhost:5050/api/health`.
+- **Camera or mic:** grant browser permissions and use a browser with
+  camera and `MediaRecorder` support.
+- **First DeepFace frame is slow:** initial TensorFlow/model loading takes time.
+- **Transcription returns 503:** `ELEVENLABS_API_KEY` is missing from
+  `backend/.env`.
