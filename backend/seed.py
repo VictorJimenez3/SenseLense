@@ -1,3 +1,4 @@
+"""Populate the local database with sample clients, sessions, and events."""
 import random
 from datetime import datetime, timedelta
 from app import app

@@ -72,13 +72,13 @@ SenseLense/
 │   ├── app.py, config.py, models.py, seed.py
 │   ├── requirements.txt, requirements-dev.txt, pytest.ini
 │   ├── tests/{conftest.py, test_api.py}
-│   └── blueprints/{ai.py, api.py}
+│   └── blueprints/{ai.py, analysis.py, api.py}
 ├── frontend/
 │   ├── login.html, index.html, clients.html, client.html
 │   ├── sessions.html, session.html, record.html, settings.html
 │   ├── assets/adp-logo.svg
 │   ├── css/styles.css
-│   └── js/{api.js, auth.js, theme.js, tutorial.js, utils.js}
+│   └── js/{api.js, auth.js, morphcast.js, theme.js, tutorial.js, utils.js}
 ├── .github/workflows/pages.yml
 ├── deploy/hf_space.sh
 ├── run.sh
@@ -96,6 +96,9 @@ Browser (record.html)
 End → PATCH /api/sessions/<id>/end
      → POST /api/sessions/<id>/summary/generate → Gemini
 ```
+
+Transcription: ElevenLabs returns words with speaker ids; consecutive words
+from one speaker are merged into a segment; first speaker in a chunk = seller.
 
 ## API
 

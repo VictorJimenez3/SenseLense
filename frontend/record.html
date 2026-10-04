@@ -315,6 +315,7 @@
     </style>
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/morphcast.js"></script>
     <script src="js/utils.js"></script>
     <!-- MorphCast AI SDK -->
     <script src="https://ai-sdk.morphcast.com/v1.16/ai-sdk.js"></script>
@@ -617,6 +618,9 @@
         const api = window.api;
         const { toast, fmtTimer } = window.utils;
 
+        const params = new URLSearchParams(location.search);
+        const preClient = params.get("client_id");
+
         // ── State ──────────────────────────────────────────────────────
         let recording = false;
         let sessionId = null;
@@ -624,11 +628,7 @@
         let timerHandle = null;
         let videoStream = null;
 
-        // ── Check for passed client_id param ──────────────────────────
-        const params = new URLSearchParams(location.search);
-        const preClient = params.get("client_id");
-
-        // ── API health ─────────────────────────────────────────────────
+        // ── Backend health ────────────────────────────────────────────
         (async () => {
             try {
                 await api.health();
@@ -674,186 +674,7 @@
             document.getElementById("timer").style.color = "var(--text-muted)";
         }
 
-        // ── MorphCast config ──────────────────────────────────────────────────
-        const MC_LICENSE = "sk514a0ced0dca050a7951d6591224c8cc7a7fec72762f";
-        const MC_SNAPSHOT_MS = 20000; // send to DB every 20s
-
-        const MC_DISPLAY_EMOS = ['Happy', 'Surprise', 'Sad', 'Negative', 'Neutral'];
-        const MC_RAW_EMOS = ['Happy', 'Surprise', 'Sad', 'Angry', 'Disgust', 'Fear', 'Neutral'];
-        const MC_EMO_COLORS = {
-            Happy: 'var(--positive)', Surprise: '#60A5FA',
-            Sad: '#818CF8', Negative: 'var(--negative)', Neutral: 'var(--text-muted)'
-        };
-
-        // MorphCast state
-        let mcAttSmoothed = 100;
-        const MC_ATT_RISE = 0.25, MC_ATT_FALL = 0.04;
-        let mcBuf = { emotions: {}, attention: [], valence: [], positivity: [] };
-        MC_RAW_EMOS.forEach(e => mcBuf.emotions[e] = []);
-        let mcSnapshotHandle = null;
-        let mcSdkStarted = false;
-
-        function buildMcBars() {
-            const c = document.getElementById('mc-emotion-bars'); c.innerHTML = '';
-            MC_DISPLAY_EMOS.forEach(n => {
-                const d = document.createElement('div'); d.className = 'mc-bar-item';
-                d.innerHTML = `<div class="mc-bar-row"><span>${n}</span><span id="mc-ev-${n}">0%</span></div>
-                    <div class="mc-bar-track"><div class="mc-bar-fill" id="mc-eb-${n}" style="background:${MC_EMO_COLORS[n]}"></div></div>`;
-                c.appendChild(d);
-            });
-        }
-
-        function setMcBar(name, val) {
-            const bar = document.getElementById('mc-eb-' + name);
-            const txt = document.getElementById('mc-ev-' + name);
-            if (bar) bar.style.width = (val * 100).toFixed(1) + '%';
-            if (txt) txt.textContent = (val * 100).toFixed(0) + '%';
-        }
-
-        function avgArr(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
-
-        function flushMcSnapshot() {
-            if (!sessionId) return;
-            const emoAvgs = {};
-            MC_RAW_EMOS.forEach(e => emoAvgs[e] = avgArr(mcBuf.emotions[e]));
-            const negative = Math.min(1, (emoAvgs.Angry || 0) + (emoAvgs.Disgust || 0) + (emoAvgs.Fear || 0));
-            emoAvgs.Negative = negative;
-
-            let dominant = 'Neutral', maxV = 0;
-            MC_DISPLAY_EMOS.forEach(e => { const v = emoAvgs[e] || 0; if (v > maxV) { maxV = v; dominant = e; } });
-
-            const tsMs = timerSecs * 1000;
-            const valenceNorm = (avgArr(mcBuf.valence) - 50) / 50; // convert 0-100 → -1..1
-
-            // Store a MorphCast event with extra data in the text field
-            window.api.ingestEvents(sessionId, [{
-                timestamp_ms: tsMs,
-                source: 'morphcast',
-                emotion: dominant.toLowerCase(),
-                valence: parseFloat(valenceNorm.toFixed(3)),
-                text: JSON.stringify({
-                    attention: Math.round(avgArr(mcBuf.attention)),
-                    valence100: Math.round(avgArr(mcBuf.valence)),
-                    positivity: Math.round(avgArr(mcBuf.positivity)),
-                    emotions: Object.fromEntries(
-                        MC_DISPLAY_EMOS.map(e => [e.toLowerCase(), parseFloat((emoAvgs[e] || 0).toFixed(3))]
-                        ))
-                })
-            }]).catch(() => { });
-
-            // Reset buffers
-            MC_RAW_EMOS.forEach(e => mcBuf.emotions[e] = []);
-            ['attention', 'valence', 'positivity'].forEach(k => mcBuf[k] = []);
-        }
-
-        function startMorphCast(stream) {
-            if (typeof CY === 'undefined') {
-                console.warn('[MorphCast] SDK not loaded — skipping.');
-                return;
-            }
-            if (mcSdkStarted) return;
-            mcSdkStarted = true;
-
-            CY.loader()
-                .licenseKey(MC_LICENSE)
-                .maxInputFrameSize(480)
-                .powerSave(0)
-                .addModule(CY.modules().FACE_EMOTION.name)
-                .addModule(CY.modules().FACE_ATTENTION.name)
-                .addModule(CY.modules().FACE_AROUSAL_VALENCE.name)
-                .addModule(CY.modules().FACE_POSITIVITY.name)
-                .addModule(CY.modules().ALARM_LOW_ATTENTION.name, { threshold: 0.3 })
-                .load()
-                .then(({ start }) => {
-                    start();
-                    setupMcListeners();
-                    document.getElementById('morphcast-panel').style.display = 'block';
-                    buildMcBars();
-                    // Periodic DB persistence
-                    mcSnapshotHandle = setInterval(flushMcSnapshot, MC_SNAPSHOT_MS);
-                })
-                .catch(err => console.error('[MorphCast] SDK error:', err));
-        }
-
-        function stopMorphCast() {
-            clearInterval(mcSnapshotHandle);
-            flushMcSnapshot(); // final snapshot
-            mcSdkStarted = false;
-            document.getElementById('morphcast-panel').style.display = 'none';
-            // MorphCast SDK has no explicit stop; camera tracks are stopped by stopCamera()
-        }
-
-        function setupMcListeners() {
-            window.addEventListener(CY.modules().FACE_EMOTION.eventName, evt => {
-                const out = evt.detail.output; if (!out) return;
-                const raw = out.emotion || {};
-                MC_RAW_EMOS.forEach(n => mcBuf.emotions[n].push(raw[n] || 0));
-                const neg = Math.min(1, (raw.Angry || 0) + (raw.Disgust || 0) + (raw.Fear || 0));
-                setMcBar('Happy', raw.Happy || 0);
-                setMcBar('Surprise', raw.Surprise || 0);
-                setMcBar('Sad', raw.Sad || 0);
-                setMcBar('Negative', neg);
-                setMcBar('Neutral', raw.Neutral || 0);
-
-                let label = out.dominantEmotion || 'Neutral';
-                if (['Angry', 'Disgust', 'Fear'].includes(label)) label = 'Negative';
-                const domEl = document.getElementById('mc-dom-emo');
-                if (domEl) {
-                    domEl.textContent = label;
-                    domEl.style.color = MC_EMO_COLORS[label] || 'var(--text-primary)';
-                }
-
-            });
-
-            window.addEventListener(CY.modules().FACE_ATTENTION.eventName, evt => {
-                const raw = evt.detail.output.attention; if (raw === undefined) return;
-                const rawPct = raw * 100, diff = rawPct - mcAttSmoothed;
-                mcAttSmoothed = Math.max(0, Math.min(100,
-                    mcAttSmoothed + (diff > 0 ? MC_ATT_RISE : MC_ATT_FALL) * diff
-                ));
-                const display = Math.round(mcAttSmoothed);
-                mcBuf.attention.push(display);
-
-                const attEl = document.getElementById('mc-att-val');
-                const ringEl = document.getElementById('mc-ring-circle');
-                const rawEl = document.getElementById('mc-att-raw');
-                if (attEl) attEl.textContent = display;
-                if (ringEl) ringEl.setAttribute('stroke-dashoffset', 163.4 - (163.4 * mcAttSmoothed / 100));
-                if (rawEl) rawEl.textContent = `raw: ${Math.round(rawPct)}%`;
-            });
-
-            window.addEventListener(CY.modules().FACE_AROUSAL_VALENCE.eventName, evt => {
-                const o = evt.detail.output; if (o.valence === undefined) return;
-                const v = Math.round((o.valence + 1) / 2 * 100);
-                mcBuf.valence.push(v);
-
-                const valEl = document.getElementById('mc-valence-val');
-                const barEl = document.getElementById('mc-val-bar');
-                const descEl = document.getElementById('mc-val-desc');
-                const col = v > 60 ? 'var(--positive)' : v < 40 ? 'var(--negative)' : 'var(--neutral)';
-                const desc = v > 70 ? 'Positive' : v > 55 ? 'Mildly +' : v < 30 ? 'Negative' : v < 45 ? 'Mildly −' : 'Neutral';
-                if (valEl) { valEl.textContent = v; valEl.style.color = col; }
-                if (barEl) { barEl.style.width = v + '%'; barEl.style.background = col; }
-                if (descEl) { descEl.textContent = desc; }
-            });
-
-            window.addEventListener(CY.modules().FACE_POSITIVITY.eventName, evt => {
-                const pos = evt.detail.output.positivity; if (pos === undefined) return;
-                mcBuf.positivity.push(Math.round(pos * 100));
-                const posEl = document.getElementById('mc-positivity');
-                if (posEl) posEl.textContent = `Pos: ${Math.round(pos * 100)}%`;
-            });
-
-            window.addEventListener(CY.modules().ALARM_LOW_ATTENTION.eventName, evt => {
-                const alarm = document.getElementById('mc-alarm');
-                if (!alarm) return;
-                if (evt.detail.output.isLowAttention) alarm.classList.add('show');
-                else alarm.classList.remove('show');
-            });
-        }
-
         // ── Camera + Mic (video for MorphCast, audio for ElevenLabs) ──────────
-        let micStream = null;
         let mediaRecorder = null;
         const frameCanvas = document.createElement('canvas');
         const frameCtx = frameCanvas.getContext('2d');
@@ -868,7 +689,7 @@
                 document.getElementById("camera-overlay").style.display = "none";
 
                 // MorphCast: SDK listens on the live camera stream in the browser
-                startMorphCast(videoStream);
+                MorphCast.start(sessionId, () => timerSecs * 1000);
 
                 // ElevenLabs: record mic in chunks and POST to Flask
                 startMicRecording(videoStream);
@@ -880,7 +701,7 @@
         }
 
         function stopCamera() {
-            stopMorphCast();
+            MorphCast.stop();
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
             }
@@ -890,52 +711,7 @@
             document.getElementById("camera-overlay").style.display = "flex";
         }
 
-        // ── ElevenLabs: record mic in 30s chunks -> POST to /transcribe ──────
-        function startMicRecording(stream) {
-            const audioOnly = new MediaStream(stream.getAudioTracks());
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                ? 'audio/webm;codecs=opus' : 'audio/webm';
-
-            const createRecorder = () => {
-                const recorder = new MediaRecorder(audioOnly, { mimeType });
-                recorder.ondataavailable = async (e) => {
-                    if (!e.data || e.data.size < 2000) return; // ignore tiny/invalid chunks
-
-                    const offsetMs = timerSecs * 1000;
-                    const fd = new FormData();
-                    fd.append('audio', e.data, 'chunk.webm');
-
-                    try {
-                        const result = await window.api.transcribeChunk(sessionId, fd, offsetMs);
-                        if (result.segments?.length) {
-                            toast(`Transcribed ${result.segments.length} new line(s)`, 'info');
-                            pollTranscript();
-                        }
-                    } catch (err) {
-                        console.warn('[ElevenLabs] Chunk error:', err.message);
-                    }
-                };
-                return recorder;
-            };
-
-            mediaRecorder = createRecorder();
-            mediaRecorder.start();
-
-            // Cycle the recorder every 10 seconds to generate a fresh valid file with headers
-            const cycleInterval = setInterval(() => {
-                if (!recording) {
-                    clearInterval(cycleInterval);
-                    return;
-                }
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    mediaRecorder.stop();
-                    mediaRecorder = createRecorder();
-                    mediaRecorder.start();
-                }
-            }, 10000);
-        }
-
-        // ── DeepFace emotion tracking — sends a webcam frame to Flask every 2.4s
+        // ── DeepFace loop: send a webcam frame to Flask every 2.4s ───────
         const savedSettings = JSON.parse(localStorage.getItem("sl-settings") || "{}");
         const FRAME_INTERVAL_MS = Math.max(
             1000,
@@ -993,7 +769,51 @@
                 }).join("");
         }
 
-        // ── Real Transcript — polls ElevenLabs events from Flask ──────────
+        // ── Mic: record audio in 10s chunks for ElevenLabs ─────────────
+        function startMicRecording(stream) {
+            const audioOnly = new MediaStream(stream.getAudioTracks());
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus' : 'audio/webm';
+
+            const createRecorder = () => {
+                const recorder = new MediaRecorder(audioOnly, { mimeType });
+                recorder.ondataavailable = async (e) => {
+                    if (!e.data || e.data.size < 2000) return;
+
+                    const offsetMs = timerSecs * 1000;
+                    const fd = new FormData();
+                    fd.append('audio', e.data, 'chunk.webm');
+
+                    try {
+                        const result = await window.api.transcribeChunk(sessionId, fd, offsetMs);
+                        if (result.segments?.length) {
+                            toast(`Transcribed ${result.segments.length} new line(s)`, 'info');
+                            pollTranscript();
+                        }
+                    } catch (err) {
+                        console.warn('[ElevenLabs] Chunk error:', err.message);
+                    }
+                };
+                return recorder;
+            };
+
+            mediaRecorder = createRecorder();
+            mediaRecorder.start();
+
+            const cycleInterval = setInterval(() => {
+                if (!recording) {
+                    clearInterval(cycleInterval);
+                    return;
+                }
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    mediaRecorder = createRecorder();
+                    mediaRecorder.start();
+                }
+            }, 10000);
+        }
+
+        // ── Transcript poll: render stored ElevenLabs events ───────────
         let transcriptHandle = null;
         let lastTranscriptEventId = 0;
         const seenTranscriptIds = new Set();
@@ -1041,7 +861,7 @@
 
         function stopTranscriptPoll() { clearInterval(transcriptHandle); }
 
-        // ── Main Record Button ─────────────────────────────────────────
+        // ── Start/End button ──────────────────────────────────────────
         document.getElementById("rec-btn").addEventListener("click", async () => {
             if (!recording) {
                 // ── START ──
@@ -1076,6 +896,7 @@
 
             } else {
                 // ── STOP ──
+                const mcValenceAvg = MorphCast.avgValence100();
                 recording = false;
                 stopTimer();
                 stopCamera();
@@ -1091,7 +912,6 @@
                 // Compute sentiment: blend MorphCast valence avg with DeepFace counts
                 const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0) || 1;
                 const deepFaceScore = ((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged) / total) * 2 - 1;
-                const mcValenceAvg = mcBuf.valence.length ? avgArr(mcBuf.valence) : null;
                 // If MorphCast ran, use its valence (0-100 → -1..1); otherwise fall back to DeepFace counts
                 const posScore = mcValenceAvg !== null
                     ? parseFloat(((mcValenceAvg - 50) / 50).toFixed(2))

@@ -1,4 +1,4 @@
-# FILE: config.py - Configuration settings loaded from backend/.env.
+"""Load backend environment variables and expose Flask configuration."""
 import os
 
 from dotenv import load_dotenv

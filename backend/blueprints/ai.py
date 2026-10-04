@@ -1,3 +1,4 @@
+"""Gemini endpoint: turn a session's transcript + emotion timeline into a structured summary."""
 import json
 from typing import List, Dict, Any
 
@@ -7,6 +8,14 @@ import google.generativeai as genai
 from models import db, Session, Event
 
 ai_bp = Blueprint("ai", __name__)
+
+
+def _bullets(title, items):
+    return (
+        f"**{title}**\n" + "\n".join(f"- {item}" for item in items) + "\n\n"
+        if items else ""
+    )
+
 
 def compact_transcript(events: List[Event], max_chars: int = 25000) -> str:
     lines = []
@@ -45,7 +54,10 @@ def generate_summary(session_id: int) -> Dict[str, Any]:
         return {"error": "Missing GEMINI_API_KEY"}
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(current_app.config["GEMINI_MODEL"])
+    model = genai.GenerativeModel(
+        current_app.config["GEMINI_MODEL"],
+        generation_config={"response_mime_type": "application/json"},
+    )
 
     prompt = f"""
 You are SenseLense AI, an expert sales analyst.
@@ -76,28 +88,7 @@ Emotion Data (ms, emotion, valence -1 to 1):
 """
 
     response = model.generate_content(prompt)
-    raw = response.text.strip()
-    
-    if raw.startswith("```json"):
-        raw = raw[7:]
-    if raw.endswith("```"):
-        raw = raw[:-3]
-    raw = raw.strip()
-
-    try:
-        parsed = json.loads(raw)
-    except Exception as e:
-        start = raw.find("{")
-        end = raw.rfind("}")
-        if start != -1 and end != -1:
-            try:
-                parsed = json.loads(raw[start:end+1])
-            except:
-                raise RuntimeError(f"JSON Parse Error: {e}")
-        else:
-            raise RuntimeError(f"Gemini returned invalid JSON")
-
-    return parsed
+    return json.loads(response.text)
 
 @ai_bp.post("/sessions/<int:session_id>/summary/generate")
 def generate_endpoint(session_id: int):
@@ -108,26 +99,15 @@ def generate_endpoint(session_id: int):
             
         session = Session.query.get(session_id)
         if session:
-            # Build an attractive markdown summary to display on the frontend
             summary_md = ""
             if session.summary and session.summary != "Session completed.":
                 summary_md += f"**User Notes**\n{session.summary}\n\n---\n\n"
-            
             summary_md += f"**Overall Analysis**\n{summary_data.get('overall_summary', '')}\n\n"
             summary_md += f"**Emotional Context**\n{summary_data.get('emotion_analysis', '')}\n\n"
-            
-            risks = summary_data.get('risks', [])
-            if risks:
-                summary_md += "**Risks**\n" + "\n".join(f"- {r}" for r in risks) + "\n\n"
-                
-            opps = summary_data.get('opportunities', [])
-            if opps:
-                summary_md += "**Opportunities**\n" + "\n".join(f"- {o}" for o in opps) + "\n\n"
-                
-            steps = summary_data.get('next_steps', [])
-            if steps:
-                summary_md += "**Next Steps**\n" + "\n".join(f"- {s}" for s in steps) + "\n"
-                
+            summary_md += _bullets("Risks", summary_data.get("risks", []))
+            summary_md += _bullets("Opportunities", summary_data.get("opportunities", []))
+            summary_md += _bullets("Next Steps", summary_data.get("next_steps", []))
+
             session.summary = summary_md.strip()
             db.session.commit()
             

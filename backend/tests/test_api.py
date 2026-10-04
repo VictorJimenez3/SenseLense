@@ -1,8 +1,77 @@
 import base64
+import io
 import time
+from types import SimpleNamespace
 
 import cv2
 import numpy as np
+
+import blueprints.analysis as analysis
+from blueprints.analysis import _group_words_by_speaker
+from models import db, Event
+
+
+def _sample_words():
+    return [
+        SimpleNamespace(text="Hi", type="word", start=0.0, speaker_id="speaker_0"),
+        SimpleNamespace(text=" ", type="spacing", start=None, speaker_id="speaker_0"),
+        SimpleNamespace(text="there", type="word", start=0.4, speaker_id="speaker_0"),
+        SimpleNamespace(text=" ", type="spacing", start=None, speaker_id="speaker_0"),
+        SimpleNamespace(text="(laughs)", type="audio_event", start=0.9, speaker_id=None),
+        SimpleNamespace(text="Hello", type="word", start=1.2, speaker_id="speaker_1"),
+        SimpleNamespace(text=" ", type="spacing", start=None, speaker_id="speaker_1"),
+        SimpleNamespace(text="back", type="word", start=1.5, speaker_id="speaker_1"),
+    ]
+
+
+def test_group_words_by_speaker():
+    segments = _group_words_by_speaker(_sample_words())
+
+    assert segments == [
+        {"speaker": "speaker_0", "text": "Hi there ", "start": 0.0},
+        {"speaker": "speaker_1", "text": "Hello back", "start": 1.2},
+    ]
+
+
+def test_transcribe_maps_speakers(seeded, client, monkeypatch):
+    words = _sample_words()
+
+    class FakeElevenLabs:
+        def __init__(self, api_key):
+            self.speech_to_text = SimpleNamespace(
+                convert=lambda **kwargs: SimpleNamespace(text="Hi there Hello back", words=words)
+            )
+
+    monkeypatch.setitem(client.application.config, "ELEVENLABS_API_KEY", "test")
+    monkeypatch.setattr(analysis, "ElevenLabs", FakeElevenLabs)
+    with client.application.app_context():
+        Event.query.filter_by(
+            session_id=seeded["session_id"],
+            source="elevenlabs",
+        ).delete()
+        db.session.commit()
+
+    response = client.post(
+        f"/api/transcribe/{seeded['session_id']}?offset_ms=10000",
+        data={"audio": (io.BytesIO(b"a" * 1024), "chunk.webm")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 201
+    assert response.get_json()["segments"] == [
+        {"speaker": "seller", "text": "Hi there", "start_ms": 10000},
+        {"speaker": "client", "text": "Hello back", "start_ms": 11200},
+    ]
+    event_response = client.get(
+        f"/api/sessions/{seeded['session_id']}?events=true"
+    )
+    transcript_events = [
+        event
+        for event in event_response.get_json()["events"]
+        if event["source"] == "elevenlabs"
+    ]
+    assert len(transcript_events) == 2
+    assert [event["speaker"] for event in transcript_events] == ["seller", "client"]
 
 
 def test_health(client):

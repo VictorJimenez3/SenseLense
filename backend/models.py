@@ -1,4 +1,4 @@
-# FILE: models.py - Database blueprint. Defines tables for Clients, Sessions, and DeepFace/ElevenLabs events.
+"""SQLAlchemy models for clients, sessions, and timeline events."""
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 

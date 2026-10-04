@@ -1,10 +1,11 @@
-# FILE: app.py - Main entry point and Flask app factory.
+"""Create and configure the SenseLense Flask application."""
 from flask import Flask, jsonify
 from flask_cors import CORS
 
 from config import Config
 from models import db
 from blueprints.api import api_bp
+from blueprints.analysis import analysis_bp
 from blueprints.ai import ai_bp
 
 
@@ -16,6 +17,7 @@ def create_app() -> Flask:
     db.init_app(app)
 
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(analysis_bp, url_prefix="/api")
     app.register_blueprint(ai_bp, url_prefix="/api")
 
     @app.route("/")
