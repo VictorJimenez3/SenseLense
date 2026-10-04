@@ -52,6 +52,14 @@ Open <http://localhost:8080/login.html>. **Do not open HTML files via
 `file://`**: `frontend/js/api.js` uses the production API URL unless the
 hostname is `localhost` or `127.0.0.1`.
 
+### Tests
+
+```bash
+cd backend
+uv pip install --python venv/bin/python -r requirements-dev.txt
+venv/bin/pytest
+```
+
 ## Project structure
 
 ```text
@@ -61,7 +69,9 @@ SenseLense/
 │   ├── .dockerignore
 │   ├── .flaskenv
 │   ├── Dockerfile
-│   ├── app.py, config.py, models.py, seed.py, requirements.txt
+│   ├── app.py, config.py, models.py, seed.py
+│   ├── requirements.txt, requirements-dev.txt, pytest.ini
+│   ├── tests/{conftest.py, test_api.py}
 │   └── blueprints/{ai.py, api.py}
 ├── frontend/
 │   ├── login.html, index.html, clients.html, client.html
@@ -69,6 +79,8 @@ SenseLense/
 │   ├── assets/adp-logo.svg
 │   ├── css/styles.css
 │   └── js/{api.js, auth.js, theme.js, tutorial.js, utils.js}
+├── .github/workflows/pages.yml
+├── deploy/hf_space.sh
 ├── run.sh
 └── setup.sh
 ```
@@ -104,9 +116,13 @@ End → PATCH /api/sessions/<id>/end
 
 ## Deploy
 
-- Backend: Docker (see `backend/Dockerfile`).
-- Frontend: static — any host; update the production `API_BASE` in
-  `frontend/js/api.js`.
+- Backend: run `bash deploy/hf_space.sh <user>`, then add the
+  `ELEVENLABS_API_KEY` and `GEMINI_API_KEY` Space secrets. Render was dropped
+  because TensorFlow needs more than 512 MB.
+- Frontend: push to `main` for GitHub Pages; set the Pages source to
+  **GitHub Actions**.
+- After the Space is up, set `DEFAULT_BASE` in `frontend/js/api.js` to
+  `https://<user>-senselense-backend.hf.space`.
 
 ## Troubleshooting
 
@@ -117,3 +133,5 @@ End → PATCH /api/sessions/<id>/end
 - **First DeepFace frame is slow:** initial TensorFlow/model loading takes time.
 - **Transcription returns 503:** `ELEVENLABS_API_KEY` is missing from
   `backend/.env`.
+- **App uses the wrong backend:** the Settings URL override is saved in browser
+  localStorage; clear it in Settings to restore automatic detection.

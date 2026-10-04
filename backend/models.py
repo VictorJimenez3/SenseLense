@@ -1,8 +1,13 @@
 # FILE: models.py - Database blueprint. Defines tables for Clients, Sessions, and DeepFace/ElevenLabs events.
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
+
+
+def _iso(dt):
+    """Serialize a naive-UTC datetime as ISO 8601 with an explicit UTC offset."""
+    return dt.replace(tzinfo=timezone.utc).isoformat() if dt else None
 
 
 class Client(db.Model):
@@ -25,7 +30,7 @@ class Client(db.Model):
             "company": self.company,
             "email": self.email,
             "notes": self.notes,
-            "created_at": self.created_at.isoformat(),
+            "created_at": _iso(self.created_at),
             "session_count": len(self.sessions),
         }
 
@@ -55,8 +60,8 @@ class Session(db.Model):
             "client_id": self.client_id,
             "client_name": self.client.name if self.client else "Unknown Client",
             "title": self.title,
-            "started_at": self.started_at.isoformat(),
-            "ended_at": self.ended_at.isoformat() if self.ended_at else None,
+            "started_at": _iso(self.started_at),
+            "ended_at": _iso(self.ended_at),
             "summary": self.summary,
             "overall_sentiment": self.overall_sentiment,
             "engagement_score": self.engagement_score,

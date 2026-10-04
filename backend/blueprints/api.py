@@ -208,7 +208,7 @@ def analyze_frame(session_id):
         frame_b64 = frame_b64.split(',', 1)[1]
 
     try:
-        frame_bytes = base64.b64decode(frame_b64)
+        frame_bytes = base64.b64decode(frame_b64, validate=True)
     except Exception:
         return jsonify({"error": "bad base64"}), 400
 

@@ -8,6 +8,7 @@
     <meta name="description"
         content="Capture live conversations with DeepFace emotion analysis and ElevenLabs transcription." />
     <link rel="stylesheet" href="css/styles.css" />
+    <link rel="icon" type="image/svg+xml" href="assets/adp-logo.svg" />
     <script>
         /* Apply saved theme + accent color immediately */
         (function () {
@@ -935,13 +936,19 @@
         }
 
         // ── DeepFace emotion tracking — sends a webcam frame to Flask every 2.4s
-        const FRAME_INTERVAL_MS = 2400;
+        const savedSettings = JSON.parse(localStorage.getItem("sl-settings") || "{}");
+        const FRAME_INTERVAL_MS = Math.max(
+            1000,
+            parseInt(savedSettings.deepfaceInterval, 10) || 2400
+        );
         let frameHandle = null;
         const EMOTION_COUNTS = { neutral: 0, happy: 0, confused: 0, engaged: 0, negative: 0 };
         const EMOTION_COLORS = {
             neutral: "var(--text-muted)", happy: "var(--positive)",
             confused: "var(--neutral)", engaged: "#60A5FA", negative: "var(--negative)"
         };
+        const titleInput = document.getElementById("sel-title");
+        if (!titleInput.value.trim()) titleInput.value = savedSettings.defaultTitle || "";
 
         function startFrameCapture() {
             analyzeCurrentFrame();

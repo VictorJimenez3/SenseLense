@@ -501,7 +501,7 @@
     {
       badge: 'Step 7 of 7 — Settings',
       title: 'Customize Everything',
-      desc: 'Head to <strong>Settings</strong> to configure your ElevenLabs API key, DeepFace capture interval, backend URL, and personalize the look with a custom accent color and light/dark theme — all saved in your browser.',
+      desc: 'Head to <strong>Settings</strong> to point the app at a different backend URL, tune the DeepFace capture interval, set a default session title, and personalize the look with a custom accent color and light/dark theme — all saved in your browser.',
       illustration: `
         <div class="il-settings">
           <div class="il-color-wheel"></div>

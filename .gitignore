@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+.pytest_cache/
 
 # Environment / secrets — teammates should create their own
 backend/.env

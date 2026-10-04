@@ -1,0 +1,205 @@
+import base64
+import time
+
+import cv2
+import numpy as np
+
+
+def test_health(client):
+    response = client.get("/api/health")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "ok"
+    assert isinstance(data["deepface_ready"], bool)
+
+
+def test_index(client):
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "message" in response.get_json()
+
+
+def test_create_and_list_clients(client):
+    response = client.post("/api/clients", json={"name": "Ada", "company": "X"})
+
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data["session_count"] == 0
+    assert data["created_at"].endswith("+00:00")
+
+    listing = client.get("/api/clients")
+    assert listing.status_code == 200
+    clients = listing.get_json()
+    assert len(clients) == 1
+    assert clients[0]["id"] == data["id"]
+
+
+def test_get_client_includes_sessions(client, seeded):
+    response = client.get(f"/api/clients/{seeded['client_id']}")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data["sessions"]) == 1
+    assert data["session_count"] == 1
+
+
+def test_get_missing_client_404(client):
+    assert client.get("/api/clients/999").status_code == 404
+
+
+def test_session_lifecycle(client, seeded):
+    session_id = seeded["session_id"]
+    client_id = seeded["client_id"]
+
+    response = client.get(f"/api/sessions/{session_id}")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ended_at"] is None
+    assert data["client_name"] == "Ada Lovelace"
+    assert "events" not in data
+
+    response = client.get(f"/api/sessions/{session_id}?events=true")
+    assert response.status_code == 200
+    events = response.get_json()["events"]
+    assert len(events) == 3
+    assert [event["timestamp_ms"] for event in events] == sorted(
+        event["timestamp_ms"] for event in events
+    )
+
+    response = client.patch(
+        f"/api/sessions/{session_id}/end",
+        json={"summary": "notes", "overall_sentiment": 0.4, "engagement_score": 77},
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ended_at"].endswith("+00:00")
+    assert data["summary"] == "notes"
+    assert data["overall_sentiment"] == 0.4
+    assert data["engagement_score"] == 77
+
+    response = client.delete(f"/api/sessions/{session_id}")
+    assert response.status_code == 200
+    assert response.get_json() == {"ok": True}
+    assert client.get(f"/api/sessions/{session_id}").status_code == 404
+    assert client.get(f"/api/clients/{client_id}").get_json()["session_count"] == 0
+
+
+def test_create_session_unknown_client_fails(client):
+    response = client.post("/api/sessions", json={"client_id": 999, "title": "x"})
+
+    assert response.status_code == 201
+    assert response.get_json()["client_name"] == "Unknown Client"
+    # TODO: should be 404 — FK is not enforced by SQLite by default.
+
+
+def test_ingest_single_event(client, seeded):
+    response = client.post(
+        f"/api/sessions/{seeded['session_id']}/events",
+        json={"timestamp_ms": 8000, "source": "deepface", "emotion": "neutral"},
+    )
+
+    assert response.status_code == 201
+    assert isinstance(response.get_json(), list)
+    assert len(response.get_json()) == 1
+
+
+def test_insights(client, seeded):
+    response = client.get(f"/api/sessions/{seeded['session_id']}/insights")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["deepface_samples"] == 2
+    assert data["transcript_chunks"] == 1
+    assert data["avg_valence"] == 0.45
+    assert data["emotion_breakdown"] == {"happy": 1, "neutral": 1}
+
+
+def test_transcribe_requires_key(client, seeded):
+    response = client.post(f"/api/transcribe/{seeded['session_id']}")
+
+    assert response.status_code == 503
+    assert "ELEVENLABS_API_KEY" in response.get_json()["error"]
+
+
+def test_transcribe_requires_audio_field(client, seeded):
+    client.application.config["ELEVENLABS_API_KEY"] = "test"
+    try:
+        response = client.post(f"/api/transcribe/{seeded['session_id']}")
+    finally:
+        client.application.config["ELEVENLABS_API_KEY"] = None
+
+    assert response.status_code == 400
+    assert "missing 'audio'" in response.get_json()["error"]
+
+
+def test_analyze_frame_validation(client, seeded):
+    path = f"/api/analyze-frame/{seeded['session_id']}"
+
+    response = client.post(path, json={})
+    assert response.status_code == 400
+    assert "no frame" in response.get_json()["error"]
+
+    response = client.post(path, json={"frame": "data:image/jpeg;base64,!!!"})
+    assert response.status_code == 400
+    assert "bad base64" in response.get_json()["error"]
+
+    invalid_image = base64.b64encode(b"not an image").decode()
+    response = client.post(
+        path,
+        json={"frame": f"data:image/jpeg;base64,{invalid_image}"},
+    )
+    assert response.status_code == 400
+    assert "invalid image" in response.get_json()["error"]
+
+
+def test_analyze_frame_real_jpeg(client, seeded):
+    success, encoded = cv2.imencode(
+        ".jpg",
+        np.full((64, 64, 3), 128, dtype=np.uint8),
+    )
+    assert success
+    frame = f"data:image/jpeg;base64,{base64.b64encode(encoded).decode()}"
+
+    response = client.post(
+        f"/api/analyze-frame/{seeded['session_id']}",
+        json={"frame": frame, "timestamp_ms": 1000},
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["emotion"] in {"happy", "engaged", "neutral", "confused", "negative"}
+    assert isinstance(data["valence"], float)
+
+    deadline = time.monotonic() + 2
+    insights = None
+    while time.monotonic() < deadline:
+        insights = client.get(
+            f"/api/sessions/{seeded['session_id']}/insights"
+        ).get_json()
+        if insights["deepface_samples"] == 3:
+            break
+        time.sleep(0.1)
+    assert insights["deepface_samples"] == 3
+
+
+def test_summary_requires_gemini_key(client, seeded):
+    response = client.post(
+        f"/api/sessions/{seeded['session_id']}/summary/generate"
+    )
+
+    assert response.status_code == 500
+    data = response.get_json()
+    assert data["ok"] is False
+    assert "GEMINI_API_KEY" in data["error"]
+
+
+def test_404_for_unknown_session_on_all_nested_routes(client):
+    assert client.get("/api/sessions/999").status_code == 404
+    assert client.get("/api/sessions/999/insights").status_code == 404
+    assert client.patch("/api/sessions/999/end", json={}).status_code == 404
+    assert client.delete("/api/sessions/999").status_code == 404
+    assert client.post("/api/sessions/999/events", json=[]).status_code == 404
+    assert client.post("/api/analyze-frame/999", json={"frame": "x"}).status_code == 404
+    assert client.post("/api/transcribe/999").status_code == 404
