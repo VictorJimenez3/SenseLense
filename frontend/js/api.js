@@ -8,7 +8,7 @@
     const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     const DEFAULT_BASE = isLocal
         ? "http://localhost:5050"
-        : "https://senselense-backend.vercel.app";
+        : "https://senselense-deepface.onrender.com";
     const API_BASE = (saved.backendUrl || DEFAULT_BASE).replace(/\/$/, "") + "/api";
 
     async function request(method, path, body = null) {

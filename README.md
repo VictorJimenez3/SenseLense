@@ -119,20 +119,16 @@ from one speaker are merged into a segment; first speaker in a chunk = seller.
 
 ## Deploy
 
-- Backend demo deployment: `https://senselense-backend.vercel.app`. It runs the
-  Flask API as a Vercel Python function with writable temporary SQLite storage;
-  data is not durable across cold starts. The DeepFace/TensorFlow worker is not
-  bundled in this lightweight deployment. Audio transcription uses Gemini when
-  `ELEVENLABS_API_KEY` is absent, so set `GEMINI_API_KEY` in Vercel's Production
-  environment for the interview demo. Use the Hugging Face Docker Space path
-  below when DeepFace frame analysis and durable storage are required.
-- Backend: run `bash deploy/hf_space.sh <user>`, then add the
-  `ELEVENLABS_API_KEY` and `GEMINI_API_KEY` Space secrets. Render was dropped
-  because TensorFlow needs more than 512 MB.
+- Full backend demo deployment: `https://senselense-deepface.onrender.com`.
+  This Render Docker service includes TensorFlow and DeepFace and reports
+  `deepface_ready: true` after startup. Audio transcription uses Gemini when
+  `ELEVENLABS_API_KEY` is absent, so add `GEMINI_API_KEY` to the Render service
+  environment for the interview demo.
+- Lightweight fallback: `https://senselense-backend.vercel.app`. It runs the
+  Flask API without TensorFlow/DeepFace for environments with small function
+  bundle limits.
 - Frontend: push to `main` for GitHub Pages; set the Pages source to
   **GitHub Actions**.
-- After the Space is up, set `DEFAULT_BASE` in `frontend/js/api.js` to
-  `https://<user>-senselense-backend.hf.space`.
 
 ## Troubleshooting
 
