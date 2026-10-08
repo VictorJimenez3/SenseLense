@@ -160,7 +160,7 @@ def _transcribe_with_gemini(audio_bytes: bytes, mime_type: str, api_key: str):
     model = (
         current_app.config.get("GEMINI_TRANSCRIBE_MODEL")
         or current_app.config.get("GEMINI_MODEL")
-        or "gemini-2.5-flash"
+        or "gemini-3.8-flash"
     )
     payload = {
         "contents": [{
