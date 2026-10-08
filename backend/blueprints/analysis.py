@@ -157,7 +157,11 @@ def _transcribe_with_gemini(audio_bytes: bytes, mime_type: str, api_key: str):
     The browser sends short WebM chunks, which stay below Gemini's inline request
     limit. Return the same small segment shape used by the ElevenLabs path.
     """
-    model = current_app.config.get("GEMINI_TRANSCRIBE_MODEL", "gemini-flash-latest")
+    model = (
+        current_app.config.get("GEMINI_TRANSCRIBE_MODEL")
+        or current_app.config.get("GEMINI_MODEL")
+        or "gemini-2.5-flash"
+    )
     payload = {
         "contents": [{
             "parts": [
