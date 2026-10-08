@@ -1,8 +1,11 @@
 """ML endpoints: DeepFace emotion on webcam frames, ElevenLabs transcription on audio chunks."""
 import base64
+import json
 import tempfile
 import threading
 import traceback
+import urllib.error
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
@@ -148,20 +151,123 @@ def _group_words_by_speaker(words):
     return segments
 
 
+def _transcribe_with_gemini(audio_bytes: bytes, mime_type: str, api_key: str):
+    """Use Gemini audio understanding as a no-ElevenLabs transcription fallback.
+
+    The browser sends short WebM chunks, which stay below Gemini's inline request
+    limit. Return the same small segment shape used by the ElevenLabs path.
+    """
+    model = current_app.config.get("GEMINI_TRANSCRIBE_MODEL", "gemini-flash-latest")
+    payload = {
+        "contents": [{
+            "parts": [
+                {
+                    "text": (
+                        "Transcribe this audio chunk. Return JSON only in this exact shape: "
+                        '{"segments":[{"speaker":"speaker_0","text":"...",'
+                        '"start_seconds":0.0}]}. Preserve the spoken words, assign stable '
+                        "speaker_0/speaker_1 labels within this chunk, and use 0 for a missing start time."
+                    )
+                },
+                {
+                    "inline_data": {
+                        "mime_type": mime_type or "audio/webm",
+                        "data": base64.b64encode(audio_bytes).decode("ascii"),
+                    }
+                },
+            ]
+        }],
+        "generationConfig": {"responseMimeType": "application/json"},
+    }
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        data=body,
+        headers={"Content-Type": "application/json", "X-goog-api-key": api_key},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Gemini transcription failed ({exc.code}): {detail[:500]}") from exc
+
+    text = "".join(
+        part.get("text", "")
+        for part in result.get("candidates", [{}])[0]
+        .get("content", {})
+        .get("parts", [])
+    ).strip()
+    if text.startswith("```"):
+        text = text.strip("`").removeprefix("json").strip()
+    parsed = json.loads(text)
+    segments = []
+    for segment in parsed.get("segments", []):
+        clean_text = str(segment.get("text", "")).strip()
+        if clean_text:
+            segments.append({
+                "speaker": str(segment.get("speaker", "speaker_0")),
+                "text": clean_text,
+                "start": float(segment.get("start_seconds", 0.0) or 0.0),
+            })
+    return segments
+
+
 @analysis_bp.post("/transcribe/<int:session_id>")
 def transcribe_chunk(session_id):
     """Multipart field 'audio' (10s webm from the browser). ?offset_ms= is where this chunk starts
     in the session, so word timestamps can be placed on the session timeline."""
     Session.query.get_or_404(session_id)
     api_key = current_app.config["ELEVENLABS_API_KEY"]
-    if not api_key:
-        return jsonify({"error": "ELEVENLABS_API_KEY not configured"}), 503
+    gemini_key = current_app.config.get("GEMINI_API_KEY")
+    if not api_key and not gemini_key:
+        return jsonify({"error": "Set ELEVENLABS_API_KEY or GEMINI_API_KEY"}), 503
     if "audio" not in request.files:
         return jsonify({"error": "missing 'audio' file field"}), 400
     audio_bytes = request.files["audio"].read()
     if len(audio_bytes) < 500:
         return jsonify({"error": f"audio too small ({len(audio_bytes)} bytes)"}), 400
     offset_ms = int(request.args.get("offset_ms", 0))
+
+    # Gemini can handle short WebM audio inline, so the demo remains usable when
+    # an ElevenLabs key is unavailable. Keep the event source name stable for the
+    # existing insights and summary queries.
+    if not api_key:
+        try:
+            segments = _transcribe_with_gemini(
+                audio_bytes,
+                request.files["audio"].mimetype or "audio/webm",
+                gemini_key,
+            )
+        except Exception as exc:
+            traceback.print_exc()
+            return jsonify({"error": str(exc)}), 502
+
+        roles = {}
+        events = []
+        for segment in segments:
+            role = roles.setdefault(
+                segment["speaker"], "seller" if not roles else "client"
+            )
+            event = Event(
+                session_id=session_id,
+                timestamp_ms=offset_ms + int(segment["start"] * 1000),
+                source="elevenlabs",
+                speaker=role,
+                text=segment["text"],
+            )
+            db.session.add(event)
+            events.append(event)
+        db.session.commit()
+        return jsonify({
+            "ok": True,
+            "provider": "gemini",
+            "segments": [
+                {"speaker": event.speaker, "text": event.text, "start_ms": event.timestamp_ms}
+                for event in events
+            ],
+        }), 201
 
     # The SDK needs a real file, so write the bytes to a temp file for the duration of the call.
     with tempfile.NamedTemporaryFile(suffix=".webm") as tmp:
