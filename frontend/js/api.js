@@ -6,7 +6,9 @@
 (function () {
     const saved = JSON.parse(localStorage.getItem("sl-settings") || "{}");
     const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    const DEFAULT_BASE = isLocal ? "http://localhost:5050" : "https://senselense.onrender.com";
+    const DEFAULT_BASE = isLocal
+        ? "http://localhost:5050"
+        : "https://senselense-backend.vercel.app";
     const API_BASE = (saved.backendUrl || DEFAULT_BASE).replace(/\/$/, "") + "/api";
 
     async function request(method, path, body = null) {

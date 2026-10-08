@@ -22,3 +22,5 @@ backend/instance/
 node_modules/
 .vscode/
 .idea/
+.vercel
+.env*

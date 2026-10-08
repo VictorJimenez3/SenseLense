@@ -1,0 +1,9 @@
+backend/venv/
+backend/instance/
+backend/tests/
+backend/__pycache__/
+backend/.pytest_cache/
+frontend/
+*.db
+.env
+notebooklm-sources/

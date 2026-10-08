@@ -119,6 +119,11 @@ from one speaker are merged into a segment; first speaker in a chunk = seller.
 
 ## Deploy
 
+- Backend demo deployment: `https://senselense-backend.vercel.app`. It runs the
+  Flask API as a Vercel Python function with writable temporary SQLite storage;
+  data is not durable across cold starts. The DeepFace/TensorFlow worker is not
+  bundled in this lightweight deployment, so use the Hugging Face Docker Space
+  path below when recording and frame analysis are required.
 - Backend: run `bash deploy/hf_space.sh <user>`, then add the
   `ELEVENLABS_API_KEY` and `GEMINI_API_KEY` Space secrets. Render was dropped
   because TensorFlow needs more than 512 MB.
