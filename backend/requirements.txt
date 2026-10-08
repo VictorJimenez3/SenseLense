@@ -12,6 +12,9 @@ numpy>=1.24.0,<2.0.0
 # ── Transcription and Generative AI ──────────────────────────
 elevenlabs==2.36.1
 google-generativeai==0.8.5
+# google-generativeai's language client still requires protobuf <6; pin the
+# API core version so pip does not select a newer protobuf>=6-only release.
+google-api-core==2.25.1
 
 # ── Utilities ──────────────────────────────────────────────
 python-dotenv==1.2.1
