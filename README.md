@@ -122,8 +122,10 @@ from one speaker are merged into a segment; first speaker in a chunk = seller.
 - Backend demo deployment: `https://senselense-backend.vercel.app`. It runs the
   Flask API as a Vercel Python function with writable temporary SQLite storage;
   data is not durable across cold starts. The DeepFace/TensorFlow worker is not
-  bundled in this lightweight deployment, so use the Hugging Face Docker Space
-  path below when recording and frame analysis are required.
+  bundled in this lightweight deployment. Audio transcription uses Gemini when
+  `ELEVENLABS_API_KEY` is absent, so set `GEMINI_API_KEY` in Vercel's Production
+  environment for the interview demo. Use the Hugging Face Docker Space path
+  below when DeepFace frame analysis and durable storage are required.
 - Backend: run `bash deploy/hf_space.sh <user>`, then add the
   `ELEVENLABS_API_KEY` and `GEMINI_API_KEY` Space secrets. Render was dropped
   because TensorFlow needs more than 512 MB.
@@ -139,7 +141,7 @@ from one speaker are merged into a segment; first speaker in a chunk = seller.
 - **Camera or mic:** grant browser permissions and use a browser with
   camera and `MediaRecorder` support.
 - **First DeepFace frame is slow:** initial TensorFlow/model loading takes time.
-- **Transcription returns 503:** `ELEVENLABS_API_KEY` is missing from
-  `backend/.env`.
+- **Transcription returns 503:** both `ELEVENLABS_API_KEY` and `GEMINI_API_KEY`
+  are missing from the backend environment.
 - **App uses the wrong backend:** the Settings URL override is saved in browser
   localStorage; clear it in Settings to restore automatic detection.
