@@ -94,7 +94,7 @@ def _run_deepface(frame_bytes: bytes):
         return mapped, valence, dominant
     except Exception as e:
         print(f"[deepface] DeepFace error: {e}")
-        return 'neutral', 0.0, 'neutral'
+        raise RuntimeError("DeepFace analysis unavailable") from e
 
 
 @analysis_bp.post("/analyze-frame/<int:session_id>")
@@ -112,12 +112,13 @@ def analyze_frame(session_id):
     except Exception:
         return jsonify({"error": "bad base64"}), 400
 
-    # DeepFace runs in a small thread pool. If it takes longer than 2s, answer "neutral" so the UI never stalls.
+    # Keep requests bounded; unavailable analysis must not become a fake neutral sample.
     future = _df_executor.submit(_run_deepface, frame_bytes)
     try:
         emotion, valence, raw = future.result(timeout=2.0)
     except Exception:
-        emotion, valence, raw = "neutral", 0.0, "timeout"
+        future.cancel()
+        return jsonify({"error": "DeepFace is busy or unavailable; try the next frame"}), 503
     if emotion is None:
         return jsonify({"error": "invalid image"}), 400
 

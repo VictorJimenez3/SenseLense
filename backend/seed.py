@@ -1,112 +1,66 @@
-"""Populate the local database with sample clients, sessions, and events."""
-import random
+"""Add one labelled, synthetic walkthrough without changing existing records."""
 from datetime import datetime, timedelta
 from app import app
 from models import db, Client, Session, Event
 
+DEMO_EMAIL = 'alex@northstar.example'
+DEMO_TITLE = '[Demo] Northstar payroll discovery'
+
+
 def seed_data():
     with app.app_context():
-        # Clear existing
-        print("Cleaning database...")
-        Event.query.delete()
-        Session.query.delete()
-        Client.query.delete()
-        db.session.commit()
-
-        # 1. Create Clients
-        print("Seeding clients...")
-        clients = [
-            Client(name="Sarah Jenkins", company="TechFlow Solutions", email="sarah.j@techflow.io", notes="Highly interested in ADP integration."),
-            Client(name="Michael Chen", company="Zenith Logistics", email="m.chen@zenith.com", notes="Current payroll provider is too expensive."),
-            Client(name="David Rodriguez", company="Rodriguez & Co", email="david@rodriguez-co.com", notes="Small business owner, needs simple UI."),
-            Client(name="Elena Petrova", company="Global Insights Group", email="elena@globalinsights.org", notes="International team, complex compliance needs.")
+        client = Client.query.filter_by(email=DEMO_EMAIL).first()
+        if client is None:
+            client = Client(name='Alex Morgan [Demo]', company='Northstar Bikes [Demo]',
+                            email=DEMO_EMAIL, notes='Fictional prospect for a synthetic demonstration.')
+            db.session.add(client)
+            db.session.flush()
+        if Session.query.filter_by(client_id=client.id, title=DEMO_TITLE).first():
+            print('Synthetic demo already available; existing records preserved.')
+            return
+        start = datetime.utcnow() - timedelta(minutes=6)
+        session = Session(
+            client_id=client.id, title=DEMO_TITLE, started_at=start,
+            ended_at=start + timedelta(minutes=5), overall_sentiment=0.25,
+            engagement_score=72,
+            summary=('**Synthetic demonstration data — not real customer audio or model outputs.**\n\n'
+                     '**Conversation**\nNorthstar Bikes wants to reduce manual payroll work for 45 employees. '
+                     'The prospect raised migration cost and scheduling concerns, then agreed to a limited pilot.\n\n'
+                     '**Key moments**\n- 01:15: Concern about migration cost.\n'
+                     '- 02:30: Seller proposes a staged rollout.\n- 04:15: Prospect agrees to evaluate a pilot.\n\n'
+                     '**Next steps**\n- Send a pricing breakdown.\n- Schedule a pilot with the payroll manager.\n\n'
+                     'Facial signals are illustrative estimates; they do not establish a person’s intentions.')
+        )
+        db.session.add(session)
+        db.session.flush()
+        dialogue = [
+            (5000, 'seller', 'Thanks for joining. What is taking the most time in your payroll process?'),
+            (30000, 'client', 'We have 45 employees. Our manager spends every Friday correcting spreadsheet entries.'),
+            (60000, 'seller', 'A payroll integration could remove that duplicate entry and provide an audit trail.'),
+            (75000, 'client', 'I am concerned about migration cost. We cannot interrupt payroll during our busy season.'),
+            (120000, 'seller', 'That makes sense. We can test with a small group while your existing system stays in place.'),
+            (150000, 'client', 'A staged rollout sounds better. Can our payroll manager review the export first?'),
+            (195000, 'seller', 'Yes. I will send the pricing breakdown and arrange a pilot with your manager.'),
+            (255000, 'client', 'Great. If the export checks out, we can start the pilot next month.'),
+            (280000, 'seller', 'I will follow up tomorrow with those details. Thanks for your time.'),
         ]
-        db.session.add_all(clients)
+        # Keep the existing event-source schema so the real timeline and insights run unchanged.
+        for timestamp, speaker, text in dialogue:
+            db.session.add(Event(session_id=session.id, timestamp_ms=timestamp,
+                                 source='elevenlabs', speaker=speaker, text=text))
+        for timestamp in range(0, 300000, 10000):
+            emotion, valence = ('neutral', 0.0)
+            if 70000 <= timestamp < 120000:
+                emotion, valence = 'negative', -0.5
+            elif 150000 <= timestamp < 240000:
+                emotion, valence = 'engaged', 0.3
+            elif timestamp >= 240000:
+                emotion, valence = 'happy', 0.9
+            db.session.add(Event(session_id=session.id, timestamp_ms=timestamp,
+                                 source='deepface', emotion=emotion, valence=valence))
         db.session.commit()
+        print(f'Synthetic demo session #{session.id} added; existing records preserved.')
 
-        # 2. Create Sessions
-        print("Seeding sessions...")
-        sessions = []
-        meeting_topics = [
-            "ADP Workforce Now Demo",
-            "Payroll Migration Roadmap",
-            "Benefits Administration Setup",
-            "Annual Compliance Review",
-            "Initial Discovery Call"
-        ]
 
-        now = datetime.utcnow()
-        for i, client in enumerate(clients):
-            for j in range(random.randint(2, 4)):
-                start_time = now - timedelta(days=random.randint(1, 10), hours=random.randint(1, 23))
-                duration_mins = random.randint(15, 45)
-                end_time = start_time + timedelta(minutes=duration_mins)
-                
-                sentiment = random.uniform(-0.4, 0.8)
-                engagement = random.uniform(40, 95)
-                
-                session = Session(
-                    client_id=client.id,
-                    title=f"{random.choice(meeting_topics)} - {client.company}",
-                    started_at=start_time,
-                    ended_at=end_time,
-                    summary="This conversation covered the main pain points of the current system. The client was particularly impressed with the real-time reporting capabilities and the seamless integration with existing HR tools.",
-                    overall_sentiment=sentiment,
-                    engagement_score=engagement
-                )
-                sessions.append(session)
-        
-        db.session.add_all(sessions)
-        db.session.commit()
-
-        # 3. Create Events (Timeline)
-        print("Seeding events...")
-        emotions = ["happy", "neutral", "engaged", "confused", "negative"]
-        
-        script_parts = [
-            ("seller", "Hi, thanks for joining today. I'd love to show you how SenseLense integrates with your ADP workflow."),
-            ("client", "Yes, we've been looking for something that can help us track client engagement during these long demo calls."),
-            ("seller", "Exactly. Our AI analysis picks up on subtle cues that might be missed otherwise."),
-            ("client", "That sounds very promising. How does it handle multi-speaker environments?"),
-            ("seller", "It uses advanced diarization from ElevenLabs to distinguish between you and the customer automatically."),
-            ("client", "I see. And the emotion tracking? How accurate is that?"),
-            ("seller", "We use DeepFace for high-precision facial analysis, mapped directly to valence and specific emotion categories."),
-            ("client", "Interesting. Let's dive into the pricing and implementation timeline.")
-        ]
-
-        for session in sessions:
-            # Add some emotion samples (DeepFace)
-            current_ms = 0
-            while current_ms < 300000: # 5 minutes of data
-                emo = random.choice(emotions)
-                valence = 0.5 if emo in ["happy", "engaged"] else (-0.5 if emo == "negative" else 0.0)
-                valence += random.uniform(-0.2, 0.2)
-                
-                event = Event(
-                    session_id=session.id,
-                    timestamp_ms=current_ms,
-                    source="deepface",
-                    emotion=emo,
-                    valence=max(-1.0, min(1.0, valence))
-                )
-                db.session.add(event)
-                current_ms += 2400 # 2.4s sample rate as per README
-            
-            # Add some transcript segments (ElevenLabs)
-            current_ms = 5000
-            for speaker, text in script_parts:
-                event = Event(
-                    session_id=session.id,
-                    timestamp_ms=current_ms,
-                    source="elevenlabs",
-                    speaker=speaker,
-                    text=text
-                )
-                db.session.add(event)
-                current_ms += 10000 + random.randint(2000, 8000)
-
-        db.session.commit()
-        print("✅ Database seeding complete.")
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     seed_data()

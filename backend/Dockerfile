@@ -19,4 +19,4 @@ RUN python -c "from deepface import DeepFace; import numpy as np; DeepFace.analy
 
 ENV PORT=7860
 EXPOSE 7860
-CMD ["sh", "-c", "[ -f instance/senselense.db ] || python seed.py; exec gunicorn -w 1 --threads 4 --timeout 120 -b 0.0.0.0:${PORT} app:app"]
+CMD ["sh", "-c", "python seed.py && exec gunicorn -w 1 --threads 4 --timeout 120 -b 0.0.0.0:${PORT} app:app"]

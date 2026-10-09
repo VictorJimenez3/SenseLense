@@ -272,3 +272,13 @@ def test_404_for_unknown_session_on_all_nested_routes(client):
     assert client.post("/api/sessions/999/events", json=[]).status_code == 404
     assert client.post("/api/analyze-frame/999", json={"frame": "x"}).status_code == 404
     assert client.post("/api/transcribe/999").status_code == 404
+
+
+def test_failed_analysis_does_not_store_fake_neutral(client, seeded, monkeypatch):
+    def unavailable(_):
+        raise RuntimeError('model unavailable')
+    monkeypatch.setattr(analysis, '_run_deepface', unavailable)
+    response = client.post(f"/api/analyze-frame/{seeded['session_id']}",
+                           json={'frame': 'eA==', 'timestamp_ms': 4000})
+    assert response.status_code == 503
+    assert client.get(f"/api/sessions/{seeded['session_id']}/insights").get_json()['deepface_samples'] == 2

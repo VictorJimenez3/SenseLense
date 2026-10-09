@@ -494,7 +494,7 @@
                             <div
                                 style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
                                 <div class="card__title" style="margin:0">Live Transcript</div>
-                                <span class="badge blue" id="transcript-source">ElevenLabs</span>
+                                <span class="badge blue" id="transcript-source">AI Transcription</span>
                             </div>
                             <div class="transcript-feed" style="padding:16px 20px;min-height:160px"
                                 id="transcript-wrap">
@@ -522,7 +522,7 @@
                             <div id="rec-status-text" style="font-size:15px;font-weight:600;color:var(--text-muted)">
                                 Ready to Record</div>
                             <div style="font-size:12px;color:var(--text-muted);max-width:220px;text-align:center">
-                                Select a client above, then press Start Recording. DeepFace + ElevenLabs will capture
+                                Select a client above, then press Start Recording. DeepFace + transcription will capture
                                 the session automatically.
                             </div>
                         </div>
@@ -627,6 +627,8 @@
         let timerSecs = 0;
         let timerHandle = null;
         let videoStream = null;
+        const pendingTranscriptions = new Set();
+        let audioCycleHandle = null;
 
         // ── Backend health ────────────────────────────────────────────
         (async () => {
@@ -693,15 +695,20 @@
 
                 // ElevenLabs: record mic in chunks and POST to Flask
                 startMicRecording(videoStream);
+                return true;
 
             } catch (err) {
                 toast("Camera/mic access denied — both are required for full analysis", "error");
                 console.error(err);
+                videoStream?.getTracks().forEach(t => t.stop());
+                return false;
             }
         }
 
-        function stopCamera() {
+        async function stopCamera() {
             MorphCast.stop();
+            clearInterval(audioCycleHandle);
+            const finalRecorder = mediaRecorder;
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
             }
@@ -709,6 +716,8 @@
             const vid = document.getElementById("camera-video");
             vid.style.display = "none";
             document.getElementById("camera-overlay").style.display = "flex";
+            if (finalRecorder?.finished) await finalRecorder.finished;
+            await Promise.allSettled([...pendingTranscriptions]);
         }
 
         // ── DeepFace loop: send a webcam frame to Flask every 2.4s ───────
@@ -772,27 +781,35 @@
         // ── Mic: record audio in 10s chunks for ElevenLabs ─────────────
         function startMicRecording(stream) {
             const audioOnly = new MediaStream(stream.getAudioTracks());
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                ? 'audio/webm;codecs=opus' : 'audio/webm';
+            const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+                .find(type => MediaRecorder.isTypeSupported(type));
 
             const createRecorder = () => {
-                const recorder = new MediaRecorder(audioOnly, { mimeType });
-                recorder.ondataavailable = async (e) => {
+                const recorder = new MediaRecorder(audioOnly, mimeType ? { mimeType } : {});
+                const offsetMs = timerSecs * 1000;
+                recorder.finished = new Promise(resolve => { recorder.onstop = resolve; });
+                recorder.ondataavailable = (e) => {
                     if (!e.data || e.data.size < 2000) return;
 
-                    const offsetMs = timerSecs * 1000;
                     const fd = new FormData();
-                    fd.append('audio', e.data, 'chunk.webm');
+                    fd.append('audio', e.data, mimeType?.includes('mp4') ? 'chunk.mp4' : 'chunk.webm');
 
-                    try {
-                        const result = await window.api.transcribeChunk(sessionId, fd, offsetMs);
-                        if (result.segments?.length) {
-                            toast(`Transcribed ${result.segments.length} new line(s)`, 'info');
-                            pollTranscript();
+                    const upload = (async () => {
+
+                        try {
+                            const result = await window.api.transcribeChunk(sessionId, fd, offsetMs);
+                            document.getElementById("transcript-source").textContent = result.provider === "gemini" ? "Gemini" : "ElevenLabs";
+                            if (result.segments?.length) {
+                                toast(`Transcribed ${result.segments.length} new line(s)`, 'info');
+                                pollTranscript();
+                            }
+                        } catch (err) {
+                            console.warn('[Transcription] Chunk error:', err.message);
+                            toast('Transcription unavailable: ' + err.message, 'error');
                         }
-                    } catch (err) {
-                        console.warn('[ElevenLabs] Chunk error:', err.message);
-                    }
+                    })();
+                    pendingTranscriptions.add(upload);
+                    upload.finally(() => pendingTranscriptions.delete(upload));
                 };
                 return recorder;
             };
@@ -800,9 +817,9 @@
             mediaRecorder = createRecorder();
             mediaRecorder.start();
 
-            const cycleInterval = setInterval(() => {
+            audioCycleHandle = setInterval(() => {
                 if (!recording) {
-                    clearInterval(cycleInterval);
+                    clearInterval(audioCycleHandle);
                     return;
                 }
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -822,7 +839,7 @@
             const wrap = document.getElementById("transcript-wrap");
             wrap.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:30px 0">
                 <div style="margin-bottom:8px">Recording audio...</div>
-                <div style="font-size:11px;opacity:.6">Transcript will appear as ElevenLabs processes the session</div>
+                <div style="font-size:11px;opacity:.6">Transcript will appear as the AI processes the session</div>
             </div>`;
             transcriptHandle = setInterval(pollTranscript, 4000);
         }
@@ -888,7 +905,17 @@
                 document.getElementById("timer").style.color = "var(--red)";
                 document.getElementById("session-label").textContent = `Session #${sessionId} · ${title} `;
 
-                await startCamera();
+                if (!await startCamera()) {
+                    recording = false;
+                    document.getElementById("rec-btn-text").textContent = "Start Recording";
+                    document.getElementById("setup-row").style.display = "";
+                    document.getElementById("rec-status-text").textContent = "Camera/microphone unavailable";
+                    document.getElementById("rec-ring").classList.remove("active");
+                    document.getElementById("rec-badge").style.display = "none";
+                    document.getElementById("rec-btn").className = "btn btn-primary btn-lg";
+                    MorphCast.stop();
+                    return;
+                }
                 startTimer();
                 startFrameCapture();
                 startTranscriptPoll();
@@ -899,9 +926,11 @@
                 const mcValenceAvg = MorphCast.avgValence100();
                 recording = false;
                 stopTimer();
-                stopCamera();
+                document.getElementById("rec-btn").disabled = true;
+                document.getElementById("rec-status-text").textContent = "Finishing transcription…";
                 stopFrameCapture();
                 stopTranscriptPoll();
+                await stopCamera();
 
                 document.getElementById("rec-ring").classList.remove("active");
                 document.getElementById("rec-badge").style.display = "none";
@@ -932,12 +961,14 @@
                         await api.generateSummary(sessionId);
                     } catch (e) {
                         console.warn("AI generation failed or not configured:", e);
+                        toast("Session saved, but AI summary unavailable: " + e.message, "error");
                     }
 
                     toast("Session saved!", "success");
                     setTimeout(() => { location.href = `session.html?id=${sessionId}`; }, 800);
                 } catch {
                     toast("Failed to save session data", "error");
+                    document.getElementById("rec-btn").disabled = false;
                 }
             }
         });

@@ -438,7 +438,7 @@
             const dot = document.getElementById("settings-api-dot");
             const text = document.getElementById("settings-api-text");
             const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-            const DEFAULT_BASE = isLocal ? "http://localhost:5050" : "https://senselense.onrender.com";
+            const DEFAULT_BASE = isLocal ? "http://localhost:5050" : "https://senselense-deepface.onrender.com";
             const backendBase = (document.getElementById("cfg-backend-url").value.trim() || DEFAULT_BASE)
                 .replace(/\/$/, "");
             const url = backendBase + "/api/health";
