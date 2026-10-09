@@ -261,14 +261,6 @@
                     </div>
                     <div class="settings-row">
                         <div>
-                            <div class="settings-row__label">Capture Interval</div>
-                            <div class="settings-row__desc">DeepFace capture is disabled; live tracking uses face-api.js</div>
-                        </div>
-                        <input type="text" id="cfg-deepface-interval" placeholder="Unused" disabled
-                            style="width:100px;text-align:center" />
-                    </div>
-                    <div class="settings-row">
-                        <div>
                             <div class="settings-row__label">Emotions to Track</div>
                             <div class="settings-row__desc">Which facial emotions are recorded</div>
                         </div>
@@ -470,7 +462,6 @@
         function saveAll() {
             const data = {
                 backendUrl: document.getElementById("cfg-backend-url").value.trim(),
-                deepfaceInterval: document.getElementById("cfg-deepface-interval").value.trim(),
                 defaultTitle: document.getElementById("cfg-default-title").value.trim(),
             };
             localStorage.setItem("sl-settings", JSON.stringify(data));
@@ -496,7 +487,6 @@
 
             const saved = JSON.parse(localStorage.getItem("sl-settings") || "{}");
             document.getElementById("cfg-backend-url").value = saved.backendUrl || "";
-            document.getElementById("cfg-deepface-interval").value = saved.deepfaceInterval || "2400";
             document.getElementById("cfg-default-title").value = saved.defaultTitle || "";
 
             checkApi();

@@ -71,7 +71,7 @@ Look for **[Demo] Northstar payroll discovery**, client **Alex Morgan [Demo]**. 
 | Environment/database configuration; sample | `backend/config.py`, `backend/seed.py` |
 | Deployment startup | `backend/Dockerfile` |
 
-Trace: Record button → `api.createSession` → POST `/api/sessions` → SQLAlchemy Session. Camera/audio → `/analyze-frame/<id>` or `/transcribe/<id>` → provider → Event rows. End → wait for audio uploads → PATCH `/sessions/<id>/end` → POST summary/generate → Gemini → Session.summary. Review → GET session with events + insights → rendered timeline.
+Trace: Record button → `api.createSession` → POST `/api/sessions` → SQLAlchemy Session. Camera → `EmotionTracker.start` → face-api.js in the browser → POST `/sessions/<id>/events` → Event rows. Audio → `/transcribe/<id>` → configured provider → Event rows. End → wait for audio and expression uploads → PATCH `/sessions/<id>/end` → POST summary/generate → Gemini → Session.summary. Review → GET session with events + insights → rendered timeline.
 
 This is plain HTML/CSS/JavaScript, Flask and SQLite, not React. No separate relay appears in the current code; recording talks directly to Flask.
 
