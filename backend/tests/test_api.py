@@ -378,3 +378,15 @@ def test_groq_summary_works_without_gemini(client, seeded, monkeypatch):
     response=client.post(f"/api/sessions/{seeded['session_id']}/summary/generate")
     assert response.status_code==200
     assert 'Discussed a pilot.' in response.get_json()['summary_md']
+
+
+def test_summary_without_transcript_returns_422_without_provider(client, seeded, monkeypatch):
+    import blueprints.ai as ai
+    client.application.config['GROQ_API_KEY']='test'
+    session=client.post('/api/sessions',json={'client_id':seeded['client_id'],'title':'No audio'}).get_json()
+    def unexpected(*args,**kwargs):
+        raise AssertionError('No provider call should be made without a transcript')
+    monkeypatch.setattr(ai.urllib.request,'urlopen',unexpected)
+    response=client.post(f"/api/sessions/{session['id']}/summary/generate")
+    assert response.status_code==422
+    assert 'transcript' in response.get_json()['error'].lower()

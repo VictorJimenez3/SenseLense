@@ -1,4 +1,4 @@
-"""Gemini endpoint: turn a session's transcript + emotion timeline into a structured summary."""
+"""Turn a transcript and expression timeline into a structured Groq/Gemini summary."""
 import json
 import urllib.request
 import urllib.error
@@ -53,6 +53,8 @@ def generate_summary(session_id: int) -> Dict[str, Any]:
     
     transcript_text = compact_transcript(events)
     moods = get_mood_data(events)
+    if not transcript_text:
+        return {"error": "No transcript available to summarize", "status": 422}
     
     api_key = current_app.config["GEMINI_API_KEY"]
     groq_key = current_app.config.get("GROQ_API_KEY")
@@ -61,7 +63,7 @@ def generate_summary(session_id: int) -> Dict[str, Any]:
 
     prompt = f"""
 You are SenseLense AI, an expert sales analyst.
-Facial emotion labels are uncertain estimates, not facts about intent. Ground recommendations in the transcript. If the transcript is empty, say there is no speech evidence; do not invent a conversation.
+Facial emotion labels are uncertain estimates, not facts about intent. Ground recommendations in the transcript.
 Return STRICT VALID JSON ONLY.
 
 Schema:
@@ -116,7 +118,7 @@ def generate_endpoint(session_id: int):
     try:
         summary_data = generate_summary(session_id)
         if "error" in summary_data:
-            return jsonify({"ok": False, "error": summary_data["error"]}), 500
+            return jsonify({"ok": False, "error": summary_data["error"]}), summary_data.get("status", 500)
             
         session = Session.query.get(session_id)
         if session:

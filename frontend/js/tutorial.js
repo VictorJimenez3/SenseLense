@@ -404,7 +404,7 @@
     {
       badge: 'Welcome',
       title: 'Welcome to SenseLense',
-      desc: 'SenseLense is your AI-powered sales conversation intelligence platform. It syncs facial emotion data from <strong>face-api.js</strong> and speech transcriptions from <strong>Gemini or ElevenLabs</strong> into a unified timeline — giving you real insights after every meeting.',
+      desc: 'SenseLense is your AI-powered sales conversation intelligence platform. It syncs facial emotion data from <strong>face-api.js</strong> and speech transcriptions from <strong>Deepgram</strong> into a unified timeline — giving you real insights after every meeting.',
       illustration: `
         <div class="il-welcome">
           <div class="rings">
@@ -443,7 +443,7 @@
     {
       badge: 'Step 3 of 7 — Sessions',
       title: 'Review Past Sessions',
-      desc: 'Every recorded meeting is saved as a <strong>Session</strong>. Click any session to view its full emotional timeline — a chronological log of face-api.js emotion events and ElevenLabs transcript chunks, synced by millisecond.',
+      desc: 'Every recorded meeting is saved as a <strong>Session</strong>. Click any session to view its full emotional timeline — a chronological log of face-api.js emotion events and AI transcript chunks, synced by millisecond.',
       illustration: `
         <div class="il-timeline">
           <div class="il-tl-event">
@@ -463,7 +463,7 @@
     {
       badge: 'Step 4 of 7 — New Session',
       title: 'Start a Recording',
-      desc: 'Hit <strong>New Session</strong> to begin capturing. <span style="color:#CC0000">face-api.js</span> watches the camera and logs facial emotion events. <span style="color:#60A5FA">ElevenLabs</span> transcribes speech in real-time. Both streams are stamped and merged automatically.',
+      desc: 'Hit <strong>New Session</strong> to begin capturing. <span style="color:#CC0000">face-api.js</span> watches the camera and logs facial emotion events. <span style="color:#60A5FA">Deepgram</span> transcribes speech in real-time. Both streams are stamped and merged automatically.',
       illustration: `
         <div class="il-record">
           <div class="il-cam-ring"><div class="il-cam-inner"></div></div>
