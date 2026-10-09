@@ -32,9 +32,10 @@ def compact_transcript(events: List[Event], max_chars: int = 25000) -> str:
     return blob[:max_chars]
 
 def get_mood_data(events: List[Event]) -> List[Dict[str, Any]]:
-    # Use MorphCast readings for new sessions; retain historical DeepFace support.
+    # Prefer browser expression samples; preserve historical providers.
     moods = []
-    source = 'morphcast' if any(e.source == 'morphcast' for e in events) else 'deepface'
+    source = next((name for name in ('faceapi', 'morphcast', 'deepface')
+                   if any(e.source == name for e in events)), None)
     for e in events:
         if e.source == source and e.emotion:
             moods.append({

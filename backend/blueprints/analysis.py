@@ -13,6 +13,7 @@ from elevenlabs.client import ElevenLabs
 from flask import Blueprint, current_app, jsonify, request
 
 from models import db, Event, Session
+from werkzeug.exceptions import TooManyRequests
 
 analysis_bp = Blueprint("analysis", __name__)
 
@@ -199,6 +200,8 @@ def _transcribe_with_gemini(audio_bytes: bytes, mime_type: str, api_key: str):
         with urllib.request.urlopen(req, timeout=30) as response:
             result = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            raise TooManyRequests(description="Gemini quota exhausted. Transcription is unavailable until quota resets or another provider is configured.") from exc
         detail = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"Gemini transcription failed ({exc.code}): {detail[:500]}") from exc
 
@@ -249,6 +252,8 @@ def transcribe_chunk(session_id):
                 request.files["audio"].mimetype or "audio/webm",
                 gemini_key,
             )
+        except TooManyRequests as exc:
+            return jsonify({"error": exc.description, "code": "quota_exhausted"}), 429
         except Exception as exc:
             traceback.print_exc()
             return jsonify({"error": str(exc)}), 502

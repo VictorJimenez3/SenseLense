@@ -122,7 +122,9 @@ def get_insights(session_id):
     ]
     morphcast_events = [event for event in events
                        if event.source == "morphcast" and event.valence is not None]
-    emotion_events = morphcast_events or deepface_events
+    faceapi_events = [event for event in events
+                      if event.source == "faceapi" and event.valence is not None]
+    emotion_events = faceapi_events or morphcast_events or deepface_events
     elevenlabs_events = [
         event for event in events if event.source == "elevenlabs"
     ]
@@ -146,6 +148,7 @@ def get_insights(session_id):
         "transcript_chunks": len(elevenlabs_events),
         "deepface_samples": len(deepface_events),
         "morphcast_samples": len(morphcast_events),
+        "faceapi_samples": len(faceapi_events),
         "emotion_samples": len(emotion_events),
-        "emotion_provider": "morphcast" if morphcast_events else "deepface" if deepface_events else None,
+        "emotion_provider": "faceapi" if faceapi_events else "morphcast" if morphcast_events else "deepface" if deepface_events else None,
     })

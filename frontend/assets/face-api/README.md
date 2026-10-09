@@ -1,0 +1,1 @@
+face-api.js 0.22.2 (MIT). Library from the pinned npm release. Tiny Face Detector and expression weights from official repository commit a86f011d72124e5fb93e59d5c4ab98f699dd5c9c. Only expression estimation is enabled. Models are served locally; camera frames are not uploaded.

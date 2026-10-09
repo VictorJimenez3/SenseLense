@@ -53,7 +53,7 @@
             return fetch(url, {
                 method: 'POST',
                 body: formData,   // no Content-Type header — browser sets boundary automatically
-            }).then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.error); }));
+            }).then(r => r.ok ? r.json() : r.json().then(e => { const error = new Error(e.error); error.code = e.code; error.status = r.status; throw error; }));
         },
         analyzeFrame: (sessionId, frameDataUrl, timestampMs) => request(
             "POST", `/analyze-frame/${sessionId}`,

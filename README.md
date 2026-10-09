@@ -1,7 +1,7 @@
 # SenseLense
 
-SenseLense is a sales-call dashboard combining DeepFace facial emotion analysis,
-in-browser MorphCast analytics, ElevenLabs transcription, and Gemini summaries.
+SenseLense is a sales-call dashboard combining free, in-browser face-api.js expression analysis,
+Gemini or ElevenLabs transcription, and Gemini summaries. The face tracker needs no API key.
 Flask stores clients, sessions, transcript segments, and emotion events in SQLite.
 
 ## Prerequisites
@@ -78,7 +78,7 @@ SenseLense/
 │   ├── sessions.html, session.html, record.html, settings.html
 │   ├── assets/adp-logo.svg
 │   ├── css/styles.css
-│   └── js/{api.js, auth.js, morphcast.js, theme.js, tutorial.js, utils.js}
+│   └── js/{api.js, auth.js, emotion.js, theme.js, tutorial.js, utils.js}
 ├── .github/workflows/pages.yml
 ├── deploy/hf_space.sh
 ├── run.sh
@@ -89,9 +89,9 @@ SenseLense/
 
 ```text
 Browser (record.html)
-  ├── every 2.4s: JPEG → POST /api/analyze-frame/<id> → DeepFace → SQLite
+  ├── live: camera video → face-api.js (Tiny Face Detector 224) → expression scores
   ├── every 10s: WebM → POST /api/transcribe/<id> → ElevenLabs scribe_v2 → SQLite
-  └── every 20s: MorphCast → POST /api/sessions/<id>/events → SQLite
+  └── every 2s: expression snapshot → POST /api/sessions/<id>/events → SQLite
 
 End → PATCH /api/sessions/<id>/end
      → POST /api/sessions/<id>/summary/generate → Gemini

@@ -319,3 +319,31 @@ def test_insights_prefer_morphcast_when_both_providers_exist(client, seeded):
     assert data["emotion_samples"] == 1
     assert data["avg_valence"] == 0.4
     assert data["deepface_samples"] == 2
+
+
+def test_insights_and_summary_use_faceapi_samples(client, seeded):
+    from blueprints.ai import get_mood_data
+    from models import Session
+    client.post(f"/api/sessions/{seeded['session_id']}/events", json=[
+        {"source":"faceapi", "emotion":"happy", "valence":0.8, "timestamp_ms":6000}
+    ])
+    data = client.get(f"/api/sessions/{seeded['session_id']}/insights").get_json()
+    assert data["emotion_provider"] == "faceapi"
+    assert data["emotion_samples"] == 1
+    assert data["avg_valence"] == 0.8
+    with client.application.app_context():
+        moods = get_mood_data(Session.query.get(seeded['session_id']).events)
+        assert moods == [{"t_ms":6000,"emotion":"happy","valence":0.8}]
+
+
+def test_gemini_quota_is_reported_as_429(client, seeded, monkeypatch):
+    import urllib.error
+    client.application.config['GEMINI_API_KEY'] = 'test'
+    def quota(*args, **kwargs):
+        raise urllib.error.HTTPError('https://example.com',429,'quota',{},io.BytesIO(b'{"error":"quota"}'))
+    monkeypatch.setattr(analysis.urllib.request, 'urlopen', quota)
+    response = client.post(f"/api/transcribe/{seeded['session_id']}",
+        data={"audio":(io.BytesIO(b'a'*1024),'chunk.webm')},content_type='multipart/form-data')
+    assert response.status_code == 429
+    assert response.get_json()['code'] == 'quota_exhausted'
+    assert 'quota exhausted' in response.get_json()['error'].lower()

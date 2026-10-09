@@ -1,13 +1,13 @@
-> Update: MorphCast is restored as the primary live tracker, matching the hackathon. The browser no longer automatically sends frames to DeepFace. Its existing backend endpoint and historical samples remain available. MorphCast snapshots feed session insights, timelines and AI emotion context; ending waits for their final upload. The original license currently returns HTTP 403 LICENSE_NOT_FOUND and must be replaced before live MorphCast tracking can work. Gemini now reports HTTP 429 free-tier quota exhaustion; transcription and summaries remain blocked by that quota. The earlier DeepFace verification below describes the previous deployment, not a verified MorphCast recording.
+> Current tracker: **face-api.js 0.22.2**, Tiny Face Detector input size 224, hosted with the app under `frontend/assets/face-api/`. No license key, external model CDN or backend face processing is needed. `frontend/js/emotion.js` reads the existing camera video, displays live expression probabilities and inference time, and saves aggregated `faceapi` events every two seconds. It skips missing faces and drains final uploads before saving. Mood and engagement remain explicitly heuristic. MorphCast-specific attention metrics were removed because this model does not supply them. Historical MorphCast/DeepFace events still display. Gemini transcription remains quota-limited; HTTP 429 now pauses further audio uploads for that session with a clear message.
 
 # SenseLense interview handoff — October 9, 2026
 
 ## A. What works / what was fixed
 
-- Browser verified: dashboard totals/navigation, client creation, Sessions search, sample detail, transcript/emotion timeline and synthetic disclosure. A separate Chrome profile entered as Demo Visitor without setup; tutorial Next/Finish controls were exercised. Cloud browser was unavailable. Live camera + microphone permission flow creates and ends a session; Render stored actual DeepFace camera samples. The real model also recognized a known face image and skipped an empty frame.
-- Backend tests cover CRUD, event ingestion, insights, frame errors, transcription mapping, missing credentials, summary deadline and repeatable seed preservation. The live summary failure returned in 44.7 seconds and preserved the saved notes/events. Recorder tests cover chunk offsets, final upload completion and MorphCast shutdown.
+- Browser verified: dashboard totals/navigation, client creation, Sessions search, sample detail, transcript/emotion timeline and synthetic disclosure. A separate Chrome profile entered as Demo Visitor without setup; tutorial Next/Finish controls were exercised. Cloud browser was unavailable. The earlier camera/microphone permission flow was verified. The new face-api.js model was tested in a real browser with a public face fixture, produced happy predictions and timestamped events, and showed 42 ms for a warmed-up inference on this Mac. User tested the official live webcam demo and approved its responsiveness.
+- Backend tests cover CRUD, event ingestion, insights, frame errors, transcription mapping, missing credentials, summary deadline and repeatable seed preservation. The live summary failure returned in 44.7 seconds and preserved the saved notes/events. Recorder tests cover chunk offsets, final upload completion and expression shutdown.
 - Fixed: destructive random seed, old Settings backend URL, ten-second transcription timestamp shift, summary starting before final audio completes, silent transcription errors, fake neutral samples on DeepFace errors, emotion analysis of frames with no face, and missing summary deadline/404 handling.
-- **Unresolved external services:** Gemini generation/transcription timed out tonight through Render and directly. A successful live transcript/summary is NOT verified. MorphCast rejects the existing license. DeepFace works independently. These failures are reported; synthetic results are never substituted into a live session.
+- **Unresolved external services:** Gemini now explicitly reports free-tier quota exhaustion (HTTP 429), following earlier timeouts. A successful live transcript/summary is NOT verified. Face expression tracking is independent of Gemini. Paid MorphCast is no longer used. These failures are reported; synthetic results are never substituted into a live session.
 
 ## B. Run it
 
@@ -27,14 +27,14 @@ cd /Users/victor/SenseLense
 
 Open http://localhost:8080/. Flask runs on 5050 with local debug reload, so Python edits are picked up during practice. If either port is already occupied, stop your previous app run first; don't start two copies. Ctrl-C stops a new run. The existing Python 3.12 virtualenv is installed. On a fresh checkout: `./setup.sh --seed`, then `./run.sh`.
 
-`backend/.env` is ignored and contains the provided temporary Gemini key locally; Render has it as an environment secret. No ElevenLabs key is configured. When Gemini is available it handles audio and summaries; adding a valid ElevenLabs key selects its transcription path. Neither is required to review the sample or run DeepFace. Changing `.env` requires restarting Flask.
+`backend/.env` is ignored and contains the provided temporary Gemini key locally; Render has it as an environment secret. No ElevenLabs key is configured. When Gemini is available it handles audio and summaries; adding a valid ElevenLabs key selects its transcription path. Neither is required to review the sample or run browser expression tracking. Changing `.env` requires restarting Flask.
 
 Tests:
 
 ```sh
 backend/venv/bin/python -m pytest backend/tests -q
 node frontend/tests/recording.test.cjs
-node frontend/tests/morphcast.test.cjs
+node frontend/tests/emotion.test.cjs
 node frontend/tests/public-demo.test.cjs
 ```
 
@@ -50,7 +50,7 @@ Look for **[Demo] Northstar payroll discovery**, client **Alex Morgan [Demo]**. 
 2. Clients → Alex Morgan → sample session. Say briefly that this is a clearly labelled synthetic walkthrough dataset.
 3. Read the objection at **01:15**, the staged rollout discussion at **02:30**, and pilot agreement at **04:15** in the timeline. Point out timestamp alignment and how the summary supports follow-up.
 4. Show emotion breakdown and next steps. Describe scores as heuristics/estimates, not proof of intent.
-5. Optionally show New Session: select a client, short title, allow camera/mic, speak for 20–30 seconds, End Session. Camera analysis is verified; live transcript/summary depends on Gemini recovering. If it is still unavailable tomorrow, demonstrate capture and saved events, then return to the reliable sample. Be candid about the provider failure.
+5. Optionally show New Session: select a client, short title, allow camera/mic, speak for 20–30 seconds, End Session. The expression model is verified with a fixture; live transcript/summary depends on available provider quota. If it is still unavailable tomorrow, demonstrate capture and saved events, then return to the reliable sample. Be candid about the provider failure.
 6. When Tim asks about implementation, open `frontend/js/api.js`, then the relevant Flask route. Follow one request rather than touring every file.
 
 ## E. Codebase map
@@ -62,7 +62,7 @@ Look for **[Demo] Northstar payroll discovery**, client **Alex Morgan [Demo]**. 
 | Session search; timeline/summary rendering | `frontend/sessions.html`, `frontend/session.html` |
 | Camera, ten-second audio chunks, saving | `frontend/record.html` (inline JavaScript) |
 | HTTP requests / backend URL | `frontend/js/api.js` |
-| Primary browser facial SDK and tracker | `frontend/js/morphcast.js` |
+| Browser expression model, live scores and snapshots | `frontend/js/emotion.js` |
 | Flask creation, CORS, route registration | `backend/app.py` |
 | Clients/sessions/events/insights endpoints | `backend/blueprints/api.py` |
 | DeepFace and audio providers | `backend/blueprints/analysis.py` |
@@ -83,7 +83,7 @@ This is plain HTML/CSS/JavaScript, Flask and SQLite, not React. No separate rela
 
 ## G. Remaining risks / honest tradeoffs
 
-- Gemini is configured but currently timing out; provider availability, free-tier limits and the temporary key can affect tomorrow. ElevenLabs path is tested with mocks, not live credentials. MorphCast attention/valence panels require a renewed license and are not verified live.
+- Gemini is configured but currently quota exhausted; provider availability, free-tier limits and the temporary key can affect tomorrow. ElevenLabs path is tested with mocks, not live credentials. Expression-derived scores are heuristics; the replacement does not supply attention estimates.
 - Render free tier sleeps with inactivity and has limited CPU/memory. Warm it before demonstrating; avoid redeploying mid-interview. Render deploys are manual; after a backend push use Manual Deploy → Deploy latest commit. GitHub Pages publishes automatically.
 - No video/audio playback is stored: only derived timestamped events. Speaker roles are assigned per audio chunk and can swap between chunks. Sentiment/engagement are simple heuristics.
 - The visitor/profile identity is localStorage personalization, not backend authentication. Use fictional contacts. Some CRUD input validation and error formatting remain basic.

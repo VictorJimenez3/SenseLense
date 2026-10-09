@@ -171,7 +171,7 @@
                             </svg>
                         </div>
                         <div class="stat-card__value" id="m-sentiment" style="font-size:20px">—</div>
-                        <div class="stat-card__label">Sentiment</div>
+                        <div class="stat-card__label">Sentiment Estimate</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card__icon">
@@ -181,7 +181,7 @@
                             </svg>
                         </div>
                         <div class="stat-card__value" id="m-engagement">—</div>
-                        <div class="stat-card__label">Engagement</div>
+                        <div class="stat-card__label">Engagement Estimate</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card__icon">
@@ -246,7 +246,7 @@
                     <div style="display:flex;flex-direction:column;gap:20px">
 
                         <div class="card">
-                            <div class="card__title" style="margin-bottom:12px">Overall Sentiment</div>
+                            <div class="card__title" style="margin-bottom:12px">Overall Sentiment Estimate</div>
                             <div class="sentiment-bar" style="margin-bottom:8px">
                                 <div class="sentiment-bar__fill" id="sent-bar" style="width:50%"></div>
                             </div>
@@ -359,9 +359,9 @@
                         const label = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
                         const isDeepFace = e.source === "deepface";
-                        const isEmotion = isDeepFace || e.source === "morphcast";
+                        const isEmotion = isDeepFace || e.source === "morphcast" || e.source === "faceapi";
                         const cls = isEmotion ? "deepface" : "transcript";
-                        const src = isDeepFace ? "DeepFace" : (e.source === "elevenlabs" ? "AI Transcript" : "MorphCast");
+                        const src = isDeepFace ? "DeepFace" : (e.source === "faceapi" ? "face-api.js" : e.source === "elevenlabs" ? "AI Transcript" : "MorphCast");
 
                         const isSeller = (e.speaker || "").toLowerCase() === "seller" || (e.speaker || "").toLowerCase() === "rep";
                         const speakerColor = isSeller ? "var(--red)" : "#60A5FA";
@@ -409,7 +409,7 @@
             }
 
             if ((insights.emotion_samples ?? insights.deepface_samples) === 0) {
-                tips.push({ icon: "📷", bg: "rgba(100,100,100,0.1)", text: `<strong>No emotion data</strong> — check camera permissions and the MorphCast license.` });
+                tips.push({ icon: "📷", bg: "rgba(100,100,100,0.1)", text: `<strong>No emotion data</strong> — check camera permissions and expression model loading.` });
             }
 
             if (insights.transcript_chunks === 0) {

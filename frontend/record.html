@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SenseLense — Record Session</title>
     <meta name="description"
-        content="Capture live conversations with MorphCast emotion analysis and ElevenLabs transcription." />
+        content="Capture live conversations with face-api.js emotion analysis and ElevenLabs transcription." />
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="icon" type="image/svg+xml" href="assets/adp-logo.svg" />
     <script>
@@ -148,7 +148,7 @@
             }
         }
 
-        /* ── MorphCast Emotion Analytics Panel ── */
+        /* ── face-api.js Emotion Analytics Panel ── */
         .mc-metric-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -315,10 +315,9 @@
     </style>
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/morphcast.js"></script>
+    <script src="assets/face-api/face-api.min.js"></script>
+    <script src="js/emotion.js"></script>
     <script src="js/utils.js"></script>
-    <!-- MorphCast AI SDK -->
-    <script src="https://ai-sdk.morphcast.com/v1.16/ai-sdk.js"></script>
 </head>
 
 <body>
@@ -522,70 +521,27 @@
                             <div id="rec-status-text" style="font-size:15px;font-weight:600;color:var(--text-muted)">
                                 Ready to Record</div>
                             <div style="font-size:12px;color:var(--text-muted);max-width:220px;text-align:center">
-                                Select a client above, then press Start Recording. MorphCast + transcription will capture
+                                Select a client above, then press Start Recording. face-api.js + transcription will capture
                                 the session automatically.
                             </div>
                         </div>
 
-                        <!-- MorphCast Live Emotion Analytics -->
-                        <div class="card" id="morphcast-panel" style="display:none">
-                            <div class="card__title" style="margin-bottom:12px">Live Emotion Analytics
-                                <span
-                                    style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:8px">MorphCast</span>
+                        <div class="card" id="expression-panel" style="display:none">
+                            <div class="card__title" style="margin-bottom:12px">Live Expressions
+                                <span style="font-size:10px;color:var(--text-muted)">face-api.js</span>
                             </div>
-
-                            <div class="mc-alarm" id="mc-alarm">⚠ LOW ATTENTION DETECTED</div>
-
-                            <!-- 3 metrics: attention · emotion · mood -->
-                            <div class="mc-metric-row">
-                                <div class="mc-metric">
-                                    <div class="mc-metric__label">Attention</div>
-                                    <div class="mc-ring-wrap">
-                                        <svg class="mc-ring-svg" width="64" height="64" viewBox="0 0 64 64">
-                                            <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface-4)"
-                                                stroke-width="6" />
-                                            <circle cx="32" cy="32" r="26" fill="none" stroke="var(--red)"
-                                                stroke-width="6" stroke-dasharray="163.4" stroke-dashoffset="163.4"
-                                                id="mc-ring-circle" stroke-linecap="round"
-                                                style="transition:stroke-dashoffset 0.7s ease;" />
-                                        </svg>
-                                        <div class="mc-ring-inner">
-                                            <div class="mc-ring-num" id="mc-att-val">—</div>
-                                            <div class="mc-ring-pct">%</div>
-                                        </div>
-                                    </div>
-                                    <div class="mc-metric__sub" id="mc-att-raw">raw: —</div>
-                                </div>
-
-                                <div class="mc-metric">
-                                    <div class="mc-metric__label">Dominant</div>
-                                    <div class="mc-metric__value" id="mc-dom-emo"
-                                        style="font-size:16px;color:var(--positive)">—</div>
-                                    <div class="mc-metric__sub" id="mc-positivity">Pos: —</div>
-                                </div>
-
-                                <div class="mc-metric">
-                                    <div class="mc-metric__label">Mood</div>
-                                    <div class="mc-metric__value" id="mc-valence-val">—</div>
-                                    <div class="mc-val-track">
-                                        <div class="mc-val-fill" id="mc-val-bar" style="background:var(--neutral)">
-                                        </div>
-                                    </div>
-                                    <div class="mc-metric__sub" id="mc-val-desc">—</div>
-                                </div>
-                            </div>
-
-                            <!-- 5-emotion bars -->
-                            <div class="mc-bars" id="mc-emotion-bars">
-                                <!-- populated by buildMcBars() -->
-                            </div>
+                            <div id="expression-status" role="status">Loading…</div>
+                            <div id="expression-dominant" style="font-size:20px;margin:10px 0">—</div>
+                            <div id="expression-latency" style="font-size:12px;color:var(--text-muted);margin-bottom:12px">—</div>
+                            <div class="mc-bars" id="expression-bars"></div>
+                            <p style="font-size:12px;color:var(--text-muted);margin-top:12px">Facial-expression estimates; camera analysis runs in your browser.</p>
                         </div>
 
-                        <!-- Live Emotion Breakdown (MorphCast) -->
+                        <!-- Live Emotion Breakdown (face-api.js) -->
                         <div class="card">
-                            <div class="card__title" style="margin-bottom:16px">Emotion Tracker
+                            <div class="card__title" style="margin-bottom:16px">Session Emotion Breakdown
                                 <span
-                                    style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:8px">MorphCast</span>
+                                    style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:8px">face-api.js</span>
                             </div>
                             <div id="emotion-tracker">
                                 <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0">
@@ -676,7 +632,7 @@
             document.getElementById("timer").style.color = "var(--text-muted)";
         }
 
-        // ── Camera + Mic (video for MorphCast, audio for ElevenLabs) ──────────
+        // ── Camera + Mic (video for face-api.js, audio for ElevenLabs) ──────────
         let mediaRecorder = null;
         async function startCamera() {
             try {
@@ -687,12 +643,12 @@
                 vid.style.display = "block";
                 document.getElementById("camera-overlay").style.display = "none";
 
-                // MorphCast: SDK listens on the live camera stream in the browser
-                MorphCast.start(sessionId, () => timerSecs * 1000, emotion => {
+                // face-api.js: analyzes the existing video element locally; no second camera stream
+                EmotionTracker.start(vid, sessionId, () => timerSecs * 1000, emotion => {
                     if (emotion in EMOTION_COUNTS) EMOTION_COUNTS[emotion]++;
                     renderEmotionTracker();
                 }, () => {
-                    document.getElementById("emotion-tracker").textContent = "MorphCast unavailable — a valid AI SDK license is required.";
+                    document.getElementById("emotion-tracker").textContent = "Expression analysis unavailable — check model loading and camera access.";
                 });
 
                 // ElevenLabs: record mic in chunks and POST to Flask
@@ -708,7 +664,7 @@
         }
 
         async function stopCamera() {
-            const finalEmotionUploads = MorphCast.stop();
+            const finalEmotionUploads = EmotionTracker.stop();
             clearInterval(audioCycleHandle);
             const finalRecorder = mediaRecorder;
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
@@ -723,7 +679,7 @@
             await finalEmotionUploads;
         }
 
-        // MorphCast feeds the primary live tracker.
+        // face-api.js feeds the primary live tracker.
         const savedSettings = JSON.parse(localStorage.getItem("sl-settings") || "{}");
         const EMOTION_COUNTS = { neutral: 0, happy: 0, confused: 0, engaged: 0, negative: 0 };
         const EMOTION_COLORS = {
@@ -754,6 +710,7 @@
 
         // ── Mic: record audio in 10s chunks for ElevenLabs ─────────────
         function startMicRecording(stream) {
+            let transcriptionBlocked = false;
             const audioOnly = new MediaStream(stream.getAudioTracks());
             const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
                 .find(type => MediaRecorder.isTypeSupported(type));
@@ -763,7 +720,7 @@
                 const offsetMs = timerSecs * 1000;
                 recorder.finished = new Promise(resolve => { recorder.onstop = resolve; });
                 recorder.ondataavailable = (e) => {
-                    if (!e.data || e.data.size < 2000) return;
+                    if (transcriptionBlocked || !e.data || e.data.size < 2000) return;
 
                     const fd = new FormData();
                     fd.append('audio', e.data, mimeType?.includes('mp4') ? 'chunk.mp4' : 'chunk.webm');
@@ -778,6 +735,10 @@
                                 pollTranscript();
                             }
                         } catch (err) {
+                            if (err.code === 'quota_exhausted') {
+                                transcriptionBlocked = true;
+                                document.getElementById('transcript-source').textContent = 'Quota exhausted';
+                            }
                             console.warn('[Transcription] Chunk error:', err.message);
                             toast('Transcription unavailable: ' + err.message, 'error');
                         }
@@ -887,7 +848,7 @@
                     document.getElementById("rec-ring").classList.remove("active");
                     document.getElementById("rec-badge").style.display = "none";
                     document.getElementById("rec-btn").className = "btn btn-primary btn-lg";
-                    MorphCast.stop();
+                    EmotionTracker.stop();
                     return;
                 }
                 startTimer();
@@ -896,7 +857,7 @@
 
             } else {
                 // ── STOP ──
-                const mcValenceAvg = MorphCast.avgValence100();
+                const expressionValenceAvg = EmotionTracker.avgValence100();
                 recording = false;
                 stopTimer();
                 document.getElementById("rec-btn").disabled = true;
@@ -910,11 +871,11 @@
                 document.getElementById("rec-btn-text").textContent = "Start Recording";
                 document.getElementById("rec-status-text").textContent = "Session ended";
 
-                // Compute session scores from MorphCast readings only
+                // Compute session scores from face-api.js readings only
                 const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0);
                 // No model readings means unavailable, not a fabricated negative score.
-                const posScore = mcValenceAvg !== null
-                    ? parseFloat(((mcValenceAvg - 50) / 50).toFixed(2))
+                const posScore = expressionValenceAvg !== null
+                    ? parseFloat(((expressionValenceAvg - 50) / 50).toFixed(2))
                     : null;
                 const engagement = total ? Math.round(((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged + EMOTION_COUNTS.neutral * 0.5) / total) * 100) : null;
 
