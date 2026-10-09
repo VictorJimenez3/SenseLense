@@ -20,6 +20,8 @@ def client():
         TESTING=True,
         ELEVENLABS_API_KEY=None,
         GEMINI_API_KEY=None,
+        DEEPGRAM_API_KEY=None,
+        GROQ_API_KEY=None,
     )
     with flask_app.app_context():
         db.drop_all()

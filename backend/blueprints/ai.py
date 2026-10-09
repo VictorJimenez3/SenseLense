@@ -1,5 +1,7 @@
 """Gemini endpoint: turn a session's transcript + emotion timeline into a structured summary."""
 import json
+import urllib.request
+import urllib.error
 from typing import List, Dict, Any
 
 from flask import Blueprint, current_app, jsonify, request
@@ -21,7 +23,7 @@ def _bullets(title, items):
 def compact_transcript(events: List[Event], max_chars: int = 25000) -> str:
     lines = []
     for e in events:
-        if e.source == 'elevenlabs':
+        if e.source in ('elevenlabs', 'deepgram'):
             text = (e.text or "").strip()
             if not text:
                 continue
@@ -53,18 +55,13 @@ def generate_summary(session_id: int) -> Dict[str, Any]:
     moods = get_mood_data(events)
     
     api_key = current_app.config["GEMINI_API_KEY"]
-    if not api_key:
-        return {"error": "Missing GEMINI_API_KEY"}
-
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(
-        current_app.config["GEMINI_MODEL"],
-        generation_config={"response_mime_type": "application/json"},
-    )
+    groq_key = current_app.config.get("GROQ_API_KEY")
+    if not api_key and not groq_key:
+        return {"error": "Missing GROQ_API_KEY or GEMINI_API_KEY"}
 
     prompt = f"""
 You are SenseLense AI, an expert sales analyst.
-Facial emotion labels are uncertain estimates, not facts about intent. Ground recommendations in the transcript.
+Facial emotion labels are uncertain estimates, not facts about intent. Ground recommendations in the transcript. If the transcript is empty, say there is no speech evidence; do not invent a conversation.
 Return STRICT VALID JSON ONLY.
 
 Schema:
@@ -91,6 +88,26 @@ Emotion Data (ms, emotion, valence -1 to 1):
 {json.dumps(moods)}
 """
 
+    if groq_key:
+        req = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions",
+            data=json.dumps({"model": current_app.config.get("GROQ_MODEL", "openai/gpt-oss-20b"),
+                "messages": [{"role": "user", "content": prompt}],
+                "response_format": {"type": "json_object"}, "reasoning_effort": "low",
+                "max_completion_tokens": 2500}).encode(),
+            headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json", "User-Agent": "SenseLense/1.0"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=40) as response:
+                result = json.load(response)
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError(f"Groq summary unavailable (HTTP {exc.code}); check credentials or quota.") from exc
+        return json.loads(result["choices"][0]["message"]["content"])
+
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(current_app.config["GEMINI_MODEL"],
+        generation_config={"response_mime_type": "application/json"})
     response = model.generate_content(prompt, request_options={"timeout": 45, "retry": None})
     return json.loads(response.text)
 

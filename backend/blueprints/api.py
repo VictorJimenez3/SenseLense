@@ -126,7 +126,7 @@ def get_insights(session_id):
                       if event.source == "faceapi" and event.valence is not None]
     emotion_events = faceapi_events or morphcast_events or deepface_events
     elevenlabs_events = [
-        event for event in events if event.source == "elevenlabs"
+        event for event in events if event.source in ("elevenlabs", "deepgram")
     ]
 
     avg_valence = (

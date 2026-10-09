@@ -1,4 +1,6 @@
-> Current tracker: **face-api.js 0.22.2**, Tiny Face Detector input size 224, hosted with the app under `frontend/assets/face-api/`. No license key, external model CDN or backend face processing is needed. `frontend/js/emotion.js` reads the existing camera video, displays live expression probabilities and inference time, and saves aggregated `faceapi` events every two seconds. It skips missing faces and drains final uploads before saving. Mood and engagement remain explicitly heuristic. MorphCast-specific attention metrics were removed because this model does not supply them. Historical MorphCast/DeepFace events still display. Gemini transcription remains quota-limited; HTTP 429 now pauses further audio uploads for that session with a clear message.
+> Provider update: Deepgram Nova-3 is now preferred for transcription when `DEEPGRAM_API_KEY` is set. Groq `openai/gpt-oss-20b` is preferred for summaries when `GROQ_API_KEY` is set. Keys are stored only in ignored local `.env` and Render environment secrets. Gemini/ElevenLabs remain optional legacy paths. Speaker IDs are per audio chunk; seller/client assignment remains a heuristic, not identity verification. Browser audio still uploads in ten-second chunks, so provider speed does not remove that capture delay.
+
+> Current tracker: **face-api.js 0.22.2**, Tiny Face Detector input size 224, hosted with the app under `frontend/assets/face-api/`. No license key, external model CDN or backend face processing is needed. `frontend/js/emotion.js` reads the existing camera video, displays live expression probabilities and inference time, and saves aggregated `faceapi` events every two seconds. It skips missing faces and drains final uploads before saving. Mood and engagement remain explicitly heuristic. MorphCast-specific attention metrics were removed because this model does not supply them. Historical MorphCast/DeepFace events still display. The optional Gemini path remains quota-limited; HTTP 429 now pauses further audio uploads for that session with a clear message.
 
 # SenseLense interview handoff — October 9, 2026
 
@@ -7,7 +9,7 @@
 - Browser verified: dashboard totals/navigation, client creation, Sessions search, sample detail, transcript/emotion timeline and synthetic disclosure. A separate Chrome profile entered as Demo Visitor without setup; tutorial Next/Finish controls were exercised. Cloud browser was unavailable. The earlier camera/microphone permission flow was verified. The new face-api.js model was tested in a real browser with a public face fixture, produced happy predictions and timestamped events, and showed 42 ms for a warmed-up inference on this Mac. User tested the official live webcam demo and approved its responsiveness.
 - Backend tests cover CRUD, event ingestion, insights, frame errors, transcription mapping, missing credentials, summary deadline and repeatable seed preservation. The live summary failure returned in 44.7 seconds and preserved the saved notes/events. Recorder tests cover chunk offsets, final upload completion and expression shutdown.
 - Fixed: destructive random seed, old Settings backend URL, ten-second transcription timestamp shift, summary starting before final audio completes, silent transcription errors, fake neutral samples on DeepFace errors, emotion analysis of frames with no face, and missing summary deadline/404 handling.
-- **Unresolved external services:** Gemini now explicitly reports free-tier quota exhaustion (HTTP 429), following earlier timeouts. A successful live transcript/summary is NOT verified. Face expression tracking is independent of Gemini. Paid MorphCast is no longer used. These failures are reported; synthetic results are never substituted into a live session.
+- **Unresolved external services:** The legacy Gemini path reports free-tier quota exhaustion. Deepgram and Groq were successfully exercised with a short synthetic test clip and its transcript. Face expression tracking is independent of Gemini. Paid MorphCast is no longer used. These failures are reported; synthetic results are never substituted into a live session.
 
 ## B. Run it
 
@@ -27,7 +29,7 @@ cd /Users/victor/SenseLense
 
 Open http://localhost:8080/. Flask runs on 5050 with local debug reload, so Python edits are picked up during practice. If either port is already occupied, stop your previous app run first; don't start two copies. Ctrl-C stops a new run. The existing Python 3.12 virtualenv is installed. On a fresh checkout: `./setup.sh --seed`, then `./run.sh`.
 
-`backend/.env` is ignored and contains the provided temporary Gemini key locally; Render has it as an environment secret. No ElevenLabs key is configured. When Gemini is available it handles audio and summaries; adding a valid ElevenLabs key selects its transcription path. Neither is required to review the sample or run browser expression tracking. Changing `.env` requires restarting Flask.
+`backend/.env` is ignored and holds provider keys locally; Render stores them as environment secrets. Deepgram and Groq are the selected providers. No ElevenLabs key is configured. When Gemini is available it handles audio and summaries; adding a valid ElevenLabs key selects its transcription path. Neither is required to review the sample or run browser expression tracking. Changing `.env` requires restarting Flask.
 
 Tests:
 
@@ -84,7 +86,7 @@ This is plain HTML/CSS/JavaScript, Flask and SQLite, not React. No separate rela
 
 ## G. Remaining risks / honest tradeoffs
 
-- Gemini is configured but currently quota exhausted; provider availability, free-tier limits and the temporary key can affect tomorrow. ElevenLabs path is tested with mocks, not live credentials. Expression-derived scores are heuristics; the replacement does not supply attention estimates.
+- The optional Gemini path is quota exhausted; Deepgram credits and Groq free-tier limits can still be exhausted; provider availability, free-tier limits and the temporary key can affect tomorrow. ElevenLabs path is tested with mocks, not live credentials. Expression-derived scores are heuristics; the replacement does not supply attention estimates.
 - Render free tier sleeps with inactivity and has limited CPU/memory. Warm it before demonstrating; avoid redeploying mid-interview. Render deploys are manual; after a backend push use Manual Deploy → Deploy latest commit. GitHub Pages publishes automatically.
 - No video/audio playback is stored: only derived timestamped events. Speaker roles are assigned per audio chunk and can swap between chunks. Sentiment/engagement are simple heuristics.
 - The visitor/profile identity is localStorage personalization, not backend authentication. Use fictional contacts. Some CRUD input validation and error formatting remain basic.

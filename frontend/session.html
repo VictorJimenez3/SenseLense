@@ -361,7 +361,7 @@
                         const isDeepFace = e.source === "deepface";
                         const isEmotion = isDeepFace || e.source === "morphcast" || e.source === "faceapi";
                         const cls = isEmotion ? "deepface" : "transcript";
-                        const src = isDeepFace ? "DeepFace" : (e.source === "faceapi" ? "face-api.js" : e.source === "elevenlabs" ? "AI Transcript" : "MorphCast");
+                        const src = isDeepFace ? "DeepFace" : (e.source === "faceapi" ? "face-api.js" : ["elevenlabs", "deepgram"].includes(e.source) ? "AI Transcript" : "MorphCast");
 
                         const isSeller = (e.speaker || "").toLowerCase() === "seller" || (e.speaker || "").toLowerCase() === "rep";
                         const speakerColor = isSeller ? "var(--red)" : "#60A5FA";

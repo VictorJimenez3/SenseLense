@@ -226,6 +226,37 @@ def _transcribe_with_gemini(audio_bytes: bytes, mime_type: str, api_key: str):
     return segments
 
 
+def _transcribe_with_deepgram(audio_bytes, mime_type, api_key):
+    req = urllib.request.Request(
+        "https://api.deepgram.com/v1/listen?model=nova-3&language=en&smart_format=true&utterances=true&diarize_model=latest",
+        data=audio_bytes,
+        headers={"Authorization": f"Token {api_key}", "Content-Type": mime_type or "audio/webm"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            result = json.load(response)
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Deepgram transcription unavailable (HTTP {exc.code}); check credentials or available credits.") from exc
+    results = result.get("results", {})
+    utterances = results.get("utterances", [])
+    if utterances:
+        return [{"speaker": str(item.get("speaker", "unknown")),
+                 "text": item.get("transcript", "").strip(), "start": item.get("start", 0)}
+                for item in utterances if item.get("transcript", "").strip()]
+    # Preserve word timing and speaker changes if no utterances were returned.
+    alternatives = results.get("channels", [{}])[0].get("alternatives", [{}])
+    segments = []
+    for word in alternatives[0].get("words", []):
+        speaker = str(word.get("speaker", "unknown"))
+        text = word.get("punctuated_word") or word.get("word", "")
+        if segments and segments[-1]["speaker"] == speaker:
+            segments[-1]["text"] += " " + text
+        else:
+            segments.append({"speaker": speaker, "text": text, "start": word.get("start", 0)})
+    return segments
+
+
 @analysis_bp.post("/transcribe/<int:session_id>")
 def transcribe_chunk(session_id):
     """Multipart field 'audio' (10s webm from the browser). ?offset_ms= is where this chunk starts
@@ -233,8 +264,9 @@ def transcribe_chunk(session_id):
     Session.query.get_or_404(session_id)
     api_key = current_app.config["ELEVENLABS_API_KEY"]
     gemini_key = current_app.config.get("GEMINI_API_KEY")
-    if not api_key and not gemini_key:
-        return jsonify({"error": "Set ELEVENLABS_API_KEY or GEMINI_API_KEY"}), 503
+    deepgram_key = current_app.config.get("DEEPGRAM_API_KEY")
+    if not api_key and not gemini_key and not deepgram_key:
+        return jsonify({"error": "Set DEEPGRAM_API_KEY, ELEVENLABS_API_KEY or GEMINI_API_KEY"}), 503
     if "audio" not in request.files:
         return jsonify({"error": "missing 'audio' file field"}), 400
     audio_bytes = request.files["audio"].read()
@@ -245,12 +277,14 @@ def transcribe_chunk(session_id):
     # Gemini can handle short WebM audio inline, so the demo remains usable when
     # an ElevenLabs key is unavailable. Keep the event source name stable for the
     # existing insights and summary queries.
-    if not api_key:
+    if deepgram_key or not api_key:
+        provider = "deepgram" if deepgram_key else "gemini"
+        transcribe = _transcribe_with_deepgram if deepgram_key else _transcribe_with_gemini
         try:
-            segments = _transcribe_with_gemini(
+            segments = transcribe(
                 audio_bytes,
                 request.files["audio"].mimetype or "audio/webm",
-                gemini_key,
+                deepgram_key or gemini_key,
             )
         except TooManyRequests as exc:
             return jsonify({"error": exc.description, "code": "quota_exhausted"}), 429
@@ -261,13 +295,13 @@ def transcribe_chunk(session_id):
         roles = {}
         events = []
         for segment in segments:
-            role = roles.setdefault(
+            role = "unknown" if segment["speaker"] == "unknown" else roles.setdefault(
                 segment["speaker"], "seller" if not roles else "client"
             )
             event = Event(
                 session_id=session_id,
                 timestamp_ms=offset_ms + int(segment["start"] * 1000),
-                source="elevenlabs",
+                source="deepgram" if deepgram_key else "elevenlabs",
                 speaker=role,
                 text=segment["text"],
             )
@@ -276,7 +310,7 @@ def transcribe_chunk(session_id):
         db.session.commit()
         return jsonify({
             "ok": True,
-            "provider": "gemini",
+            "provider": provider,
             "segments": [
                 {"speaker": event.speaker, "text": event.text, "start_ms": event.timestamp_ms}
                 for event in events

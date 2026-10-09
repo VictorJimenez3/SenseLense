@@ -729,7 +729,7 @@
 
                         try {
                             const result = await window.api.transcribeChunk(sessionId, fd, offsetMs);
-                            document.getElementById("transcript-source").textContent = result.provider === "gemini" ? "Gemini" : "ElevenLabs";
+                            document.getElementById("transcript-source").textContent = result.provider === "deepgram" ? "Deepgram" : result.provider === "gemini" ? "Gemini" : "ElevenLabs";
                             if (result.segments?.length) {
                                 toast(`Transcribed ${result.segments.length} new line(s)`, 'info');
                                 pollTranscript();
@@ -783,7 +783,7 @@
             if (!sessionId) return;
             try {
                 const data = await window.api.getSession(sessionId, true);
-                const txEvents = (data.events || []).filter(e => e.source === "elevenlabs" && e.text);
+                const txEvents = (data.events || []).filter(e => ["elevenlabs", "deepgram"].includes(e.source) && e.text);
                 const newEvents = txEvents.filter(e => !seenTranscriptIds.has(e.id));
                 if (!newEvents.length) return;
 

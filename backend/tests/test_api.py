@@ -347,3 +347,34 @@ def test_gemini_quota_is_reported_as_429(client, seeded, monkeypatch):
     assert response.status_code == 429
     assert response.get_json()['code'] == 'quota_exhausted'
     assert 'quota exhausted' in response.get_json()['error'].lower()
+
+
+def test_deepgram_transcript_persists_and_reaches_summary(client, seeded, monkeypatch):
+    import json
+    from blueprints.ai import compact_transcript
+    from models import Session
+    client.application.config['DEEPGRAM_API_KEY']='test'
+    payload={'results':{'utterances':[
+        {'speaker':0,'start':0.2,'transcript':'Let us discuss pricing.'},
+        {'speaker':1,'start':2.1,'transcript':'Can we start a pilot?'}]}}
+    monkeypatch.setattr(analysis.urllib.request,'urlopen',lambda *a,**k:io.BytesIO(json.dumps(payload).encode()))
+    response=client.post(f"/api/transcribe/{seeded['session_id']}?offset_ms=10000",
+        data={'audio':(io.BytesIO(b'a'*1024),'chunk.webm')},content_type='multipart/form-data')
+    assert response.status_code==201
+    assert response.get_json()['provider']=='deepgram'
+    assert response.get_json()['segments'][1]['start_ms']==12100
+    data=client.get(f"/api/sessions/{seeded['session_id']}/insights").get_json()
+    assert data['transcript_chunks']==3
+    with client.application.app_context():
+        assert 'Can we start a pilot?' in compact_transcript(Session.query.get(seeded['session_id']).events)
+
+
+def test_groq_summary_works_without_gemini(client, seeded, monkeypatch):
+    import json
+    import blueprints.ai as ai
+    client.application.config['GROQ_API_KEY']='test'
+    payload={'choices':[{'message':{'content':json.dumps({'overall_summary':'Discussed a pilot.','next_steps':['Send pricing.']})}}]}
+    monkeypatch.setattr(ai.urllib.request,'urlopen',lambda *a,**k:io.BytesIO(json.dumps(payload).encode()))
+    response=client.post(f"/api/sessions/{seeded['session_id']}/summary/generate")
+    assert response.status_code==200
+    assert 'Discussed a pilot.' in response.get_json()['summary_md']

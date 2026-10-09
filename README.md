@@ -1,7 +1,7 @@
 # SenseLense
 
 SenseLense is a sales-call dashboard combining free, in-browser face-api.js expression analysis,
-Gemini or ElevenLabs transcription, and Gemini summaries. The face tracker needs no API key.
+Deepgram transcription and Groq summaries, with optional Gemini/ElevenLabs paths. The face tracker needs no API key.
 Flask stores clients, sessions, transcript segments, and emotion events in SQLite.
 
 ## Prerequisites
