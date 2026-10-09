@@ -3,6 +3,7 @@ import json
 from typing import List, Dict, Any
 
 from flask import Blueprint, current_app, jsonify, request
+from werkzeug.exceptions import HTTPException
 import google.generativeai as genai
 
 from models import db, Session, Event
@@ -61,6 +62,7 @@ def generate_summary(session_id: int) -> Dict[str, Any]:
 
     prompt = f"""
 You are SenseLense AI, an expert sales analyst.
+Facial emotion labels are uncertain estimates, not facts about intent. Ground recommendations in the transcript.
 Return STRICT VALID JSON ONLY.
 
 Schema:
@@ -87,7 +89,7 @@ Emotion Data (ms, emotion, valence -1 to 1):
 {json.dumps(moods)}
 """
 
-    response = model.generate_content(prompt)
+    response = model.generate_content(prompt, request_options={"timeout": 45, "retry": None})
     return json.loads(response.text)
 
 @ai_bp.post("/sessions/<int:session_id>/summary/generate")
@@ -112,6 +114,8 @@ def generate_endpoint(session_id: int):
             db.session.commit()
             
         return jsonify({"ok": True, "summary_md": session.summary, "raw_data": summary_data})
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()

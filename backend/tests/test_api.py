@@ -282,3 +282,24 @@ def test_failed_analysis_does_not_store_fake_neutral(client, seeded, monkeypatch
                            json={'frame': 'eA==', 'timestamp_ms': 4000})
     assert response.status_code == 503
     assert client.get(f"/api/sessions/{seeded['session_id']}/insights").get_json()['deepface_samples'] == 2
+
+
+def test_summary_model_call_has_deadline(client, seeded, monkeypatch):
+    import blueprints.ai as ai
+    client.application.config['GEMINI_API_KEY'] = 'test'
+    monkeypatch.setattr(ai.genai, 'configure', lambda **kwargs: None)
+    calls = []
+    class Model:
+        def __init__(self, *args, **kwargs):
+            pass
+        def generate_content(self, prompt, **kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(text='{"overall_summary":"Test summary"}')
+    monkeypatch.setattr(ai.genai, 'GenerativeModel', Model)
+    response = client.post(f"/api/sessions/{seeded['session_id']}/summary/generate")
+    assert response.status_code == 200
+    assert calls[0].get('request_options', {}).get('timeout') == 45
+
+
+def test_summary_unknown_session_returns_404(client):
+    assert client.post('/api/sessions/999/summary/generate').status_code == 404

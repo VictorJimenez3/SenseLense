@@ -22,6 +22,7 @@
     });
     let mcSnapshotHandle = null;
     let mcSdkStarted = false;
+    let stopSdk = null;
 
     function buildMcBars() {
         const container = document.getElementById("mc-emotion-bars");
@@ -49,7 +50,7 @@
     }
 
     function flushSnapshot() {
-        if (!activeSessionId) return;
+        if (!activeSessionId || !mcBuf.valence.length) return;
 
         const emotionAverages = {};
         MC_RAW_EMOS.forEach((emotion) => {
@@ -214,14 +215,20 @@
             .addModule(CY.modules().FACE_POSITIVITY.name)
             .addModule(CY.modules().ALARM_LOW_ATTENTION.name, { threshold: 0.3 })
             .load()
-            .then(({ start }) => {
+            .then(({ start, stop }) => {
+                if (!activeSessionId) { stop(); return; }
+                stopSdk = stop;
                 start();
                 setupListeners();
                 document.getElementById("morphcast-panel").style.display = "block";
                 buildMcBars();
                 mcSnapshotHandle = setInterval(flushSnapshot, MC_SNAPSHOT_MS);
             })
-            .catch((error) => console.error("[MorphCast] SDK error:", error));
+            .catch((error) => {
+                mcSdkStarted = false;
+                console.error("[MorphCast] SDK error:", error);
+                window.utils?.toast("Optional MorphCast unavailable; DeepFace capture remains active.", "info");
+            });
     }
 
     window.MorphCast = {
@@ -233,6 +240,9 @@
         stop() {
             clearInterval(mcSnapshotHandle);
             flushSnapshot();
+            stopSdk?.();
+            stopSdk = null;
+            activeSessionId = null;
             mcSdkStarted = false;
             document.getElementById("morphcast-panel").style.display = "none";
         },
