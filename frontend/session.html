@@ -394,17 +394,19 @@
             const tips = [];
             const { label } = sentimentLabel(session.overall_sentiment);
 
-            if (session.overall_sentiment > 0.2) {
-                tips.push({ icon: "✅", bg: "rgba(34,197,94,0.12)", text: `<strong>Positive overall sentiment</strong> — the client showed mostly positive reactions. Good momentum to build on in the follow-up.` });
+            if (session.overall_sentiment == null) {
+                tips.push({icon:"ℹ️", bg:"rgba(100,100,100,0.1)", text:"No sentiment estimate available."});
+            } else if (session.overall_sentiment > 0.2) {
+                tips.push({ icon: "✅", bg: "rgba(34,197,94,0.12)", text: `<strong>Positive overall sentiment</strong> — Positive facial-expression estimates; compare with the transcript before drawing conclusions.` });
             } else if (session.overall_sentiment < -0.2) {
-                tips.push({ icon: "⚠️", bg: "rgba(239,68,68,0.12)", text: `<strong>Negative sentiment detected.</strong> Review the moments where the client seemed displeased and address those objections in your next touchpoint.` });
+                tips.push({ icon: "⚠️", bg: "rgba(239,68,68,0.12)", text: `<strong>Negative sentiment detected.</strong> Review the transcript around these expression estimates for context.` });
             } else {
-                tips.push({ icon: "ℹ️", bg: "rgba(234,179,8,0.12)", text: `<strong>Neutral sentiment</strong> — the client was composed but non-committal. Consider adding a stronger call-to-action in the follow-up.` });
+                tips.push({ icon: "ℹ️", bg: "rgba(234,179,8,0.12)", text: `<strong>Neutral sentiment</strong> — Mostly neutral expression estimates; they do not establish intent.` });
             }
 
-            if (session.engagement_score > 70) {
-                tips.push({ icon: "🔥", bg: "rgba(59,130,246,0.12)", text: `<strong>High engagement (${Math.round(session.engagement_score)}%)</strong> — the customer was actively engaged. Strike while the iron is hot.` });
-            } else if (session.engagement_score < 40) {
+            if (session.engagement_score != null && session.engagement_score > 70) {
+                tips.push({ icon: "🔥", bg: "rgba(59,130,246,0.12)", text: `<strong>High engagement (${Math.round(session.engagement_score)}%)</strong> — Expression-derived estimate; confirm engagement through the conversation.` });
+            } else if (session.engagement_score != null && session.engagement_score < 40) {
                 tips.push({ icon: "😴", bg: "rgba(234,179,8,0.1)", text: `<strong>Low engagement (${Math.round(session.engagement_score)}%)</strong> — consider a shorter, more focused pitch next time.` });
             }
 

@@ -36,6 +36,7 @@ backend/venv/bin/python -m pytest backend/tests -q
 node frontend/tests/recording.test.cjs
 node frontend/tests/emotion.test.cjs
 node frontend/tests/public-demo.test.cjs
+node frontend/tests/insights.test.cjs
 ```
 
 ## C. Demo data
