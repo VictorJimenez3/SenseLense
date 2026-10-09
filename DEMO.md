@@ -43,9 +43,18 @@ node frontend/tests/insights.test.cjs
 
 ## C. Demo data
 
-Look for **[Demo] Northstar payroll discovery**, client **Alex Morgan [Demo]**. It is a fictional five-minute sales discussion: nine transcript segments, thirty illustrative emotion samples, labelled summary, objection and pilot agreement.
+Four clearly labelled synthetic sessions are restored by `backend/seed.py` on every Docker startup:
 
-`backend/seed.py` inserts this sample only when absent; it preserves all existing records and can be run repeatedly. Docker runs it on every startup. SQLite lives at `backend/instance/senselense.db` locally and `/app/instance/senselense.db` in Render. Render storage is ephemeral: new recordings can disappear on replacement/redeploy, but the sample is restored automatically. The sample uses the existing event source categories for compatibility; its results were authored as fixtures, not produced by either provider. Don't regenerate its summary during the demo.
+- **Harbor Coffee — pilot agreed:** 14 transcript segments, 36 expression samples. Start here: concern at 02:05, parallel-run proposal at 03:05, conditional pilot agreement at 04:45.
+- **Cedar Design — pricing objection:** 14 segments, 33 samples. A hard budget cap and unverified export requirement remain unresolved.
+- **Summit Services — security review pending:** 15 segments, 39 samples. Interest without purchasing authority; finance and IT must review first.
+- **Northstar payroll discovery:** the original nine-segment, thirty-sample walkthrough is preserved.
+
+The three expanded examples live in `backend/demo_data.json`, tracked in Git. Their transcript, summary and expression data are authored fixtures, **not real customer audio or model outputs**. Titles, client notes and summaries disclose this; expression events also carry a synthetic flag. Their normal source categories let the real timeline and insight code render them. No provider calls or credits are needed to restore them. Keep the authored summary for the walkthrough.
+
+The seed adds only absent sessions and never overwrites existing notes or real records. Run `(cd backend && venv/bin/python seed.py)` locally or `python seed.py` in the Render shell to restore deleted examples. Restart/redeploy also restores them automatically. IDs may change on restoration; find examples by title rather than bookmarking a numeric ID.
+
+SQLite remains ephemeral on Render: newly recorded sessions and edits are not permanent. The **repository-backed demo examples survive storage loss by being recreated at startup**. This is restoration, not permanent database storage. Even if a visitor deletes an example, the next seed run restores it.
 
 ## D. Natural demo flow (about five minutes)
 

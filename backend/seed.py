@@ -1,4 +1,6 @@
-"""Add one labelled, synthetic walkthrough without changing existing records."""
+"""Restore repository-backed synthetic examples without overwriting existing records."""
+import json
+from pathlib import Path
 from datetime import datetime, timedelta
 from app import app
 from models import db, Client, Session, Event
@@ -7,7 +9,7 @@ DEMO_EMAIL = 'alex@northstar.example'
 DEMO_TITLE = '[Demo] Northstar payroll discovery'
 
 
-def seed_data():
+def seed_legacy_demo():
     with app.app_context():
         client = Client.query.filter_by(email=DEMO_EMAIL).first()
         if client is None:
@@ -60,6 +62,44 @@ def seed_data():
                                  source='deepface', emotion=emotion, valence=valence))
         db.session.commit()
         print(f'Synthetic demo session #{session.id} added; existing records preserved.')
+
+
+def seed_data():
+    seed_legacy_demo()
+    examples = json.loads(Path(__file__).with_name('demo_data.json').read_text())
+    with app.app_context():
+        for index, example in enumerate(examples):
+            client = Client.query.filter_by(email=example['email']).first()
+            if client is None:
+                client = Client(name=example['name'] + ' [Demo]',
+                                company=example['company'] + ' [Demo]', email=example['email'],
+                                notes='Fictional prospect. Transcripts, expression samples and summaries are synthetic fixtures.')
+                db.session.add(client)
+                db.session.flush()
+            if Session.query.filter_by(client_id=client.id, title=example['title']).first():
+                continue
+            # Fixed fixture timestamps keep the demo stable across fresh deployments.
+            start = datetime(2026, 10, 8, 14, 0) + timedelta(hours=index)
+            samples = [(second * 1000, emotion, valence)
+                       for begin, end, emotion, valence in example['phases']
+                       for second in range(begin, end, 10)]
+            session = Session(client_id=client.id, title=example['title'], started_at=start,
+                              ended_at=start + timedelta(seconds=example['duration_s']),
+                              overall_sentiment=sum(v for _, _, v in samples) / len(samples),
+                              engagement_score=example['engagement_score'], summary=example['summary'])
+            db.session.add(session)
+            db.session.flush()
+            # Use normal source categories so the existing UI renders the fixtures.
+            # The title, client notes and summary explicitly disclose that they are synthetic.
+            for second, speaker, text in example['dialogue']:
+                db.session.add(Event(session_id=session.id, timestamp_ms=second * 1000,
+                                     source='deepgram', speaker=speaker, text=text))
+            for timestamp, emotion, valence in samples:
+                db.session.add(Event(session_id=session.id, timestamp_ms=timestamp,
+                                     source='faceapi', emotion=emotion, valence=valence,
+                                     text=json.dumps({'synthetic': True, 'note': 'Authored demo fixture, not a model output.'})))
+            print(f'Synthetic demo session #{session.id} added: {session.title}')
+        db.session.commit()
 
 
 if __name__ == '__main__':

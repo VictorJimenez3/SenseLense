@@ -1,0 +1,328 @@
+[
+  {
+    "name": "Jordan Lee",
+    "company": "Harbor Coffee",
+    "email": "jordan@harbor.example",
+    "title": "[Demo] Harbor Coffee — pilot agreed",
+    "duration_s": 360,
+    "engagement_score": 81,
+    "summary": "**Synthetic demonstration data — not real customer audio or model outputs.**\n\n**Conversation**\nHarbor Coffee runs three locations with 38 hourly staff. Jordan spends six hours each week reconciling shift changes and tips. The seller proposes a two-week pilot at one store, keeping the existing payroll process in parallel.\n\n**Key moments**\n- 00:55: Jordan describes missed shift edits and inconsistent tip totals.\n- 02:05: Concern about disrupting Friday payroll.\n- 03:05: Parallel processing and a reconciliation checklist address the operational concern.\n- 04:45: Jordan agrees to a one-store pilot, subject to the bookkeeper reviewing the export.\n\n**Opportunities**\n- Reduce repeated spreadsheet corrections across three stores.\n- Validate tip reporting with the bookkeeper before wider rollout.\n\n**Risks**\n- The pilot is conditional; no purchase or full rollout is agreed.\n- Tip reporting and export compatibility still need verification.\n\n**Next steps**\n- Seller: send a sample payroll export and a written pilot checklist tomorrow.\n- Jordan: introduce bookkeeper Casey and choose the pilot store by Tuesday.\n- Both: meet next Wednesday to approve the two-week test.\n\n**Emotional context**\nIllustrative expression samples shift from concern to a positive reaction around the parallel-run proposal. These fixtures do not establish intent; the pilot agreement comes from the transcript.",
+    "dialogue": [
+      [
+        5,
+        "seller",
+        "Thanks for making time, Jordan. How are you handling payroll across the three coffee shops?"
+      ],
+      [
+        25,
+        "client",
+        "We have 38 hourly staff. Each store sends a spreadsheet, and I combine them on Thursday nights."
+      ],
+      [
+        55,
+        "client",
+        "Shift swaps and tip totals are the worst part. I spend about six hours fixing entries every week."
+      ],
+      [
+        80,
+        "seller",
+        "Where do the corrections usually come from: the clock-in records or changes made after a shift?"
+      ],
+      [
+        100,
+        "client",
+        "Mostly edits after the shift. A manager approves a swap, but it never reaches the payroll spreadsheet."
+      ],
+      [
+        125,
+        "client",
+        "My concern is switching systems and getting Friday payroll wrong. People depend on that money."
+      ],
+      [
+        150,
+        "seller",
+        "We could pilot at one store for two weeks while your existing process continues in parallel."
+      ],
+      [
+        185,
+        "seller",
+        "We would compare the two exports before any payroll is submitted, using a checklist your bookkeeper signs off on."
+      ],
+      [
+        210,
+        "client",
+        "That feels much safer. Casey, our bookkeeper, would need to see how tips appear in the export."
+      ],
+      [
+        240,
+        "seller",
+        "I can send a sample export tomorrow. What would a useful pilot outcome look like to you?"
+      ],
+      [
+        265,
+        "client",
+        "Matching tip totals and cutting my corrections down to an hour. I am not ready to move all three stores yet."
+      ],
+      [
+        285,
+        "client",
+        "If Casey approves the export, yes, let us try one store. I can choose which store by Tuesday."
+      ],
+      [
+        315,
+        "seller",
+        "I will send the export and checklist. Can we meet next Wednesday with Casey to confirm the test?"
+      ],
+      [
+        340,
+        "client",
+        "Wednesday works. I will make the introduction today. The full rollout can wait until we see the results."
+      ]
+    ],
+    "phases": [
+      [
+        0,
+        120,
+        "neutral",
+        0.05
+      ],
+      [
+        120,
+        180,
+        "negative",
+        -0.4
+      ],
+      [
+        180,
+        240,
+        "engaged",
+        0.3
+      ],
+      [
+        240,
+        360,
+        "happy",
+        0.7
+      ]
+    ]
+  },
+  {
+    "name": "Priya Shah",
+    "company": "Cedar Design Studio",
+    "email": "priya@cedar.example",
+    "title": "[Demo] Cedar Design — pricing objection",
+    "duration_s": 330,
+    "engagement_score": 58,
+    "summary": "**Synthetic demonstration data — not real customer audio or model outputs.**\n\n**Conversation**\nCedar Design Studio has 22 employees and a firm $250 monthly budget for payroll software. Priya's main requirement is job-code reporting. The quoted $420 monthly package exceeds the budget, and the required export is not yet confirmed.\n\n**Key moments**\n- 01:20: Seller quotes $420 per month, excluding setup.\n- 01:40: Priya states a hard $250 cap and challenges the return on investment.\n- 03:00: Seller acknowledges the mismatch instead of promising an unapproved discount.\n- 04:10: Priya agrees only to review a written lower-cost option.\n\n**Opportunities**\n- Check whether a smaller package supports the required job-code export.\n- Compare measured time savings with the total monthly and setup cost.\n\n**Risks**\n- Budget mismatch remains unresolved; this is not a committed sale.\n- Job-code reporting is a must-have, not a confirmed feature.\n- Adding a manual export would erase much of the expected time savings.\n\n**Next steps**\n- Seller: verify export support and send itemized pricing by Friday.\n- Include setup fees and any limitations of the smaller package.\n- Priya: review only if the option fits the stated cap; no follow-up meeting is booked.\n\n**Emotional context**\nIllustrative expression samples become negative around pricing and settle later. The stated budget and feature requirements, rather than facial estimates, establish the objection.",
+    "dialogue": [
+      [
+        5,
+        "seller",
+        "Priya, what would make a payroll tool useful for the studio?"
+      ],
+      [
+        25,
+        "client",
+        "We have 22 employees. I need hours grouped by project code so our accountant can allocate costs."
+      ],
+      [
+        50,
+        "seller",
+        "How much time does the current process take?"
+      ],
+      [
+        65,
+        "client",
+        "Around two hours a week. We are small, so price matters as much as saving time."
+      ],
+      [
+        80,
+        "seller",
+        "The package we discussed is $420 per month, with a separate setup fee I will itemize."
+      ],
+      [
+        100,
+        "client",
+        "That is much higher than I expected. Our approved budget is $250 a month, and it is a hard cap."
+      ],
+      [
+        125,
+        "seller",
+        "Would eliminating the weekly reconciliation change the budget calculation?"
+      ],
+      [
+        145,
+        "client",
+        "Not by that much. And can you actually export hours by job code? That is the feature we cannot lose."
+      ],
+      [
+        180,
+        "seller",
+        "I need to verify that export with the product team. I do not want to promise it or offer a discount I cannot approve."
+      ],
+      [
+        205,
+        "client",
+        "Thank you. If I still have to rebuild the job-code report by hand, there is no point switching."
+      ],
+      [
+        230,
+        "seller",
+        "I will check whether a smaller package includes the export and send the full monthly and setup costs."
+      ],
+      [
+        250,
+        "client",
+        "I am willing to read that, but only if it fits the $250 cap. Please do not count this as an agreement."
+      ],
+      [
+        280,
+        "seller",
+        "Understood. I will email the options by Friday and call out any limitations. Should we book a follow-up?"
+      ],
+      [
+        310,
+        "client",
+        "Let us wait for the email. If the numbers and export work, I will reply; otherwise we will stay where we are."
+      ]
+    ],
+    "phases": [
+      [
+        0,
+        90,
+        "neutral",
+        0.0
+      ],
+      [
+        90,
+        180,
+        "negative",
+        -0.65
+      ],
+      [
+        180,
+        240,
+        "confused",
+        -0.25
+      ],
+      [
+        240,
+        330,
+        "neutral",
+        0.05
+      ]
+    ]
+  },
+  {
+    "name": "Morgan Ellis",
+    "company": "Summit Field Services",
+    "email": "morgan@summit.example",
+    "title": "[Demo] Summit Services — security review pending",
+    "duration_s": 390,
+    "engagement_score": 64,
+    "summary": "**Synthetic demonstration data — not real customer audio or model outputs.**\n\n**Conversation**\nSummit Field Services manages 96 employees across four crews. Morgan wants consistent overtime approvals but cannot authorize a purchase. The finance director and IT lead must review pricing, access controls, and data handling before a pilot is considered.\n\n**Key moments**\n- 00:50: Overtime approvals arrive through texts and spreadsheets.\n- 01:50: Morgan explains that purchasing authority belongs to the finance director.\n- 02:25: IT security requirements become a prerequisite.\n- 04:30: Seller separates verified functionality from unanswered security questions.\n- 05:35: Morgan accepts a review packet; no pilot date or purchase is approved.\n\n**Opportunities**\n- Demonstrate a clearer overtime approval trail with a sanitized example.\n- Bring finance and IT into the evaluation rather than relying on one contact.\n\n**Risks**\n- No decision maker attended this call.\n- Data region, retention, SSO availability, and contract terms remain unverified.\n- A pilot cannot start before IT completes its review.\n\n**Next steps**\n- Seller: send itemized pricing, an approval-flow example, and documented security answers by Thursday.\n- Clearly flag unanswered questions; do not promise SSO or a specific storage region.\n- Morgan: forward the packet to finance and IT. Revisit scheduling after their feedback.\n\n**Emotional context**\nIllustrative expression samples show uncertainty around security questions and engagement during the review plan. They are not evidence of purchasing intent or approval.",
+    "dialogue": [
+      [
+        5,
+        "seller",
+        "Morgan, what is creating the most friction for your field teams?"
+      ],
+      [
+        25,
+        "client",
+        "We have 96 employees across four crews. Every supervisor approves overtime differently."
+      ],
+      [
+        50,
+        "client",
+        "Some approvals come by text, others in a spreadsheet. Finance has to chase the missing ones before payroll."
+      ],
+      [
+        80,
+        "seller",
+        "A consistent approval trail could help. Who would need to evaluate a change to that process?"
+      ],
+      [
+        110,
+        "client",
+        "Our finance director approves purchases. I can coordinate the evaluation, but I cannot sign a contract."
+      ],
+      [
+        145,
+        "client",
+        "IT will also ask where the data is stored, how long it is retained, and whether we can use single sign-on."
+      ],
+      [
+        170,
+        "seller",
+        "Those are fair prerequisites. I will provide documented answers rather than guess on this call."
+      ],
+      [
+        200,
+        "client",
+        "We cannot put employee information into a pilot before IT reviews it. That held up the last vendor."
+      ],
+      [
+        235,
+        "seller",
+        "For the walkthrough, we can use fictional employees to show the approval flow without uploading your records."
+      ],
+      [
+        270,
+        "seller",
+        "I can show the approval steps today. SSO availability, data region, and retention are questions I still need to verify."
+      ],
+      [
+        295,
+        "client",
+        "That distinction helps. Please include contract terms and total costs, so finance is not reviewing an incomplete packet."
+      ],
+      [
+        320,
+        "seller",
+        "I will send pricing, a sanitized approval example, and the security answers by Thursday, with open questions marked."
+      ],
+      [
+        335,
+        "client",
+        "I can forward that to finance and IT. I am interested, but this is a review step, not permission to start a pilot."
+      ],
+      [
+        355,
+        "seller",
+        "Understood. Would you like to set a date for the next call?"
+      ],
+      [
+        375,
+        "client",
+        "Let us wait for IT feedback first. I will let you know whether the director wants a meeting."
+      ]
+    ],
+    "phases": [
+      [
+        0,
+        120,
+        "neutral",
+        0.0
+      ],
+      [
+        120,
+        210,
+        "confused",
+        -0.25
+      ],
+      [
+        210,
+        330,
+        "engaged",
+        0.35
+      ],
+      [
+        330,
+        390,
+        "neutral",
+        0.1
+      ]
+    ]
+  }
+]
