@@ -120,16 +120,19 @@ def get_insights(session_id):
         event for event in events
         if event.source == "deepface" and event.valence is not None
     ]
+    morphcast_events = [event for event in events
+                       if event.source == "morphcast" and event.valence is not None]
+    emotion_events = morphcast_events or deepface_events
     elevenlabs_events = [
         event for event in events if event.source == "elevenlabs"
     ]
 
     avg_valence = (
-        sum(event.valence for event in deepface_events) / len(deepface_events)
-        if deepface_events else 0.0
+        sum(event.valence for event in emotion_events) / len(emotion_events)
+        if emotion_events else 0.0
     )
     emotion_counts = {}
-    for event in deepface_events:
+    for event in emotion_events:
         if event.emotion:
             emotion_counts[event.emotion] = emotion_counts.get(event.emotion, 0) + 1
 
@@ -142,4 +145,7 @@ def get_insights(session_id):
         "emotion_breakdown": emotion_counts,
         "transcript_chunks": len(elevenlabs_events),
         "deepface_samples": len(deepface_events),
+        "morphcast_samples": len(morphcast_events),
+        "emotion_samples": len(emotion_events),
+        "emotion_provider": "morphcast" if morphcast_events else "deepface" if deepface_events else None,
     })

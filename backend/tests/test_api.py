@@ -308,3 +308,14 @@ def test_no_face_is_skipped_instead_of_stored_as_emotion(client, seeded, monkeyp
                            json={'frame': base64.b64encode(image).decode(), 'timestamp_ms': 4000})
     assert response.status_code == 422
     assert client.get(f"/api/sessions/{seeded['session_id']}/insights").get_json()['deepface_samples'] == 2
+
+
+def test_insights_prefer_morphcast_when_both_providers_exist(client, seeded):
+    client.post(f"/api/sessions/{seeded['session_id']}/events", json=[
+        {"source":"morphcast", "emotion":"happy", "valence":0.4, "timestamp_ms":6000}
+    ])
+    data = client.get(f"/api/sessions/{seeded['session_id']}/insights").get_json()
+    assert data["emotion_provider"] == "morphcast"
+    assert data["emotion_samples"] == 1
+    assert data["avg_valence"] == 0.4
+    assert data["deepface_samples"] == 2

@@ -37,7 +37,7 @@ console.log('Recording chunk offset passed');
     context.MorphCast = {stop() {}};
     context.videoStream = {getTracks: () => [{stop() {}}]};
     context.document = {getElementById: () => ({style: {}})};
-    vm.runInContext(html.slice(html.indexOf('async function stopCamera('), html.indexOf('// ── DeepFace loop')), context);
+    vm.runInContext(html.slice(html.indexOf('async function stopCamera('), html.indexOf('// MorphCast feeds')), context);
     context.startMicRecording({getAudioTracks: () => []});
     let finished = false;
     const stop = context.stopCamera().then(() => { finished = true; });

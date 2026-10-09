@@ -1,3 +1,5 @@
+> Update: MorphCast is restored as the primary live tracker, matching the hackathon. The browser no longer automatically sends frames to DeepFace. Its existing backend endpoint and historical samples remain available. MorphCast snapshots feed session insights, timelines and AI emotion context; ending waits for their final upload. The original license currently returns HTTP 403 LICENSE_NOT_FOUND and must be replaced before live MorphCast tracking can work. Gemini now reports HTTP 429 free-tier quota exhaustion; transcription and summaries remain blocked by that quota. The earlier DeepFace verification below describes the previous deployment, not a verified MorphCast recording.
+
 # SenseLense interview handoff — October 9, 2026
 
 ## A. What works / what was fixed
@@ -60,7 +62,7 @@ Look for **[Demo] Northstar payroll discovery**, client **Alex Morgan [Demo]**. 
 | Session search; timeline/summary rendering | `frontend/sessions.html`, `frontend/session.html` |
 | Camera, ten-second audio chunks, saving | `frontend/record.html` (inline JavaScript) |
 | HTTP requests / backend URL | `frontend/js/api.js` |
-| Optional browser facial SDK | `frontend/js/morphcast.js` |
+| Primary browser facial SDK and tracker | `frontend/js/morphcast.js` |
 | Flask creation, CORS, route registration | `backend/app.py` |
 | Clients/sessions/events/insights endpoints | `backend/blueprints/api.py` |
 | DeepFace and audio providers | `backend/blueprints/analysis.py` |

@@ -23,6 +23,11 @@
     let mcSnapshotHandle = null;
     let mcSdkStarted = false;
     let stopSdk = null;
+    let onEmotion = () => {};
+    let onUnavailable = () => {};
+    let listenersInstalled = false;
+    let valenceTotal = 0, valenceCount = 0;
+    const pendingSnapshots = new Set();
 
     function buildMcBars() {
         const container = document.getElementById("mc-emotion-bars");
@@ -75,7 +80,7 @@
         });
 
         const valenceNorm = (average(mcBuf.valence) - 50) / 50;
-        window.api.ingestEvents(activeSessionId, [{
+        const upload = window.api.ingestEvents(activeSessionId, [{
             timestamp_ms: readElapsedMs(),
             source: "morphcast",
             emotion: dominant.toLowerCase(),
@@ -91,7 +96,11 @@
                     ]),
                 ),
             }),
-        }]).catch(() => {});
+        }]).catch(() => {
+            window.utils?.toast("Could not save MorphCast sample; check the backend connection.", "error");
+        });
+        pendingSnapshots.add(upload);
+        upload.finally(() => pendingSnapshots.delete(upload));
 
         MC_RAW_EMOS.forEach((emotion) => {
             mcBuf.emotions[emotion] = [];
@@ -102,7 +111,10 @@
     }
 
     function setupListeners() {
+        if (listenersInstalled) return;
+        listenersInstalled = true;
         window.addEventListener(CY.modules().FACE_EMOTION.eventName, (event) => {
+            if (!activeSessionId) return;
             const output = event.detail.output;
             if (!output) return;
             const raw = output.emotion || {};
@@ -119,6 +131,9 @@
             setMcBar("Negative", negative);
             setMcBar("Neutral", raw.Neutral || 0);
 
+            const trackerLabel = {Happy: "happy", Surprise: "engaged", Sad: "negative",
+                Angry: "negative", Disgust: "negative", Fear: "confused", Neutral: "neutral"};
+            onEmotion(trackerLabel[output.dominantEmotion] || "neutral");
             let label = output.dominantEmotion || "Neutral";
             if (["Angry", "Disgust", "Fear"].includes(label)) label = "Negative";
             const dominantEmotion = document.getElementById("mc-dom-emo");
@@ -129,6 +144,7 @@
         });
 
         window.addEventListener(CY.modules().FACE_ATTENTION.eventName, (event) => {
+            if (!activeSessionId) return;
             const raw = event.detail.output.attention;
             if (raw === undefined) return;
             const rawPercent = raw * 100;
@@ -154,10 +170,13 @@
         });
 
         window.addEventListener(CY.modules().FACE_AROUSAL_VALENCE.eventName, (event) => {
+            if (!activeSessionId) return;
             const output = event.detail.output;
             if (output.valence === undefined) return;
             const value = Math.round((output.valence + 1) / 2 * 100);
             mcBuf.valence.push(value);
+            valenceTotal += value;
+            valenceCount++;
 
             const valenceValue = document.getElementById("mc-valence-val");
             const bar = document.getElementById("mc-val-bar");
@@ -180,6 +199,7 @@
         });
 
         window.addEventListener(CY.modules().FACE_POSITIVITY.eventName, (event) => {
+            if (!activeSessionId) return;
             const positivity = event.detail.output.positivity;
             if (positivity === undefined) return;
             mcBuf.positivity.push(Math.round(positivity * 100));
@@ -190,6 +210,7 @@
         });
 
         window.addEventListener(CY.modules().ALARM_LOW_ATTENTION.eventName, (event) => {
+            if (!activeSessionId) return;
             const alarm = document.getElementById("mc-alarm");
             if (!alarm) return;
             if (event.detail.output.isLowAttention) alarm.classList.add("show");
@@ -199,7 +220,8 @@
 
     function startSdk() {
         if (typeof CY === "undefined") {
-            console.warn("[MorphCast] SDK not loaded — skipping.");
+            onUnavailable();
+            window.utils?.toast("MorphCast SDK did not load; emotion tracking unavailable.", "error");
             return;
         }
         if (mcSdkStarted) return;
@@ -218,8 +240,8 @@
             .then(({ start, stop }) => {
                 if (!activeSessionId) { stop(); return; }
                 stopSdk = stop;
-                start();
                 setupListeners();
+                start();
                 document.getElementById("morphcast-panel").style.display = "block";
                 buildMcBars();
                 mcSnapshotHandle = setInterval(flushSnapshot, MC_SNAPSHOT_MS);
@@ -227,14 +249,20 @@
             .catch((error) => {
                 mcSdkStarted = false;
                 console.error("[MorphCast] SDK error:", error);
-                window.utils?.toast("Optional MorphCast unavailable; DeepFace capture remains active.", "info");
+                onUnavailable();
+                window.utils?.toast("MorphCast unavailable: check the AI SDK license. Emotion tracking has not switched providers.", "error");
             });
     }
 
     window.MorphCast = {
-        start(sessionId, getElapsedMs) {
+        start(sessionId, getElapsedMs, updateEmotion = () => {}, unavailable = () => {}) {
             activeSessionId = sessionId;
             readElapsedMs = getElapsedMs;
+            onEmotion = updateEmotion;
+            onUnavailable = unavailable;
+            valenceTotal = 0;
+            valenceCount = 0;
+            mcAttSmoothed = 100;
             startSdk();
         },
         stop() {
@@ -245,9 +273,10 @@
             activeSessionId = null;
             mcSdkStarted = false;
             document.getElementById("morphcast-panel").style.display = "none";
+            return Promise.allSettled([...pendingSnapshots]);
         },
         avgValence100() {
-            return mcBuf.valence.length ? average(mcBuf.valence) : null;
+            return valenceCount ? valenceTotal / valenceCount : null;
         },
     };
 })();

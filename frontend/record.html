@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SenseLense — Record Session</title>
     <meta name="description"
-        content="Capture live conversations with DeepFace emotion analysis and ElevenLabs transcription." />
+        content="Capture live conversations with MorphCast emotion analysis and ElevenLabs transcription." />
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="icon" type="image/svg+xml" href="assets/adp-logo.svg" />
     <script>
@@ -522,7 +522,7 @@
                             <div id="rec-status-text" style="font-size:15px;font-weight:600;color:var(--text-muted)">
                                 Ready to Record</div>
                             <div style="font-size:12px;color:var(--text-muted);max-width:220px;text-align:center">
-                                Select a client above, then press Start Recording. DeepFace + transcription will capture
+                                Select a client above, then press Start Recording. MorphCast + transcription will capture
                                 the session automatically.
                             </div>
                         </div>
@@ -581,11 +581,11 @@
                             </div>
                         </div>
 
-                        <!-- Live Emotion Breakdown (DeepFace) -->
+                        <!-- Live Emotion Breakdown (MorphCast) -->
                         <div class="card">
                             <div class="card__title" style="margin-bottom:16px">Emotion Tracker
                                 <span
-                                    style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:8px">DeepFace</span>
+                                    style="font-size:10px;font-weight:500;color:var(--text-muted);margin-left:8px">MorphCast</span>
                             </div>
                             <div id="emotion-tracker">
                                 <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0">
@@ -678,9 +678,6 @@
 
         // ── Camera + Mic (video for MorphCast, audio for ElevenLabs) ──────────
         let mediaRecorder = null;
-        const frameCanvas = document.createElement('canvas');
-        const frameCtx = frameCanvas.getContext('2d');
-
         async function startCamera() {
             try {
                 // Request BOTH video and audio in one permission prompt
@@ -691,7 +688,12 @@
                 document.getElementById("camera-overlay").style.display = "none";
 
                 // MorphCast: SDK listens on the live camera stream in the browser
-                MorphCast.start(sessionId, () => timerSecs * 1000);
+                MorphCast.start(sessionId, () => timerSecs * 1000, emotion => {
+                    if (emotion in EMOTION_COUNTS) EMOTION_COUNTS[emotion]++;
+                    renderEmotionTracker();
+                }, () => {
+                    document.getElementById("emotion-tracker").textContent = "MorphCast unavailable — a valid AI SDK license is required.";
+                });
 
                 // ElevenLabs: record mic in chunks and POST to Flask
                 startMicRecording(videoStream);
@@ -706,7 +708,7 @@
         }
 
         async function stopCamera() {
-            MorphCast.stop();
+            const finalEmotionUploads = MorphCast.stop();
             clearInterval(audioCycleHandle);
             const finalRecorder = mediaRecorder;
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
@@ -718,15 +720,11 @@
             document.getElementById("camera-overlay").style.display = "flex";
             if (finalRecorder?.finished) await finalRecorder.finished;
             await Promise.allSettled([...pendingTranscriptions]);
+            await finalEmotionUploads;
         }
 
-        // ── DeepFace loop: send a webcam frame to Flask every 2.4s ───────
+        // MorphCast feeds the primary live tracker.
         const savedSettings = JSON.parse(localStorage.getItem("sl-settings") || "{}");
-        const FRAME_INTERVAL_MS = Math.max(
-            1000,
-            parseInt(savedSettings.deepfaceInterval, 10) || 2400
-        );
-        let frameHandle = null;
         const EMOTION_COUNTS = { neutral: 0, happy: 0, confused: 0, engaged: 0, negative: 0 };
         const EMOTION_COLORS = {
             neutral: "var(--text-muted)", happy: "var(--positive)",
@@ -734,30 +732,6 @@
         };
         const titleInput = document.getElementById("sel-title");
         if (!titleInput.value.trim()) titleInput.value = savedSettings.defaultTitle || "";
-
-        function startFrameCapture() {
-            analyzeCurrentFrame();
-            frameHandle = setInterval(analyzeCurrentFrame, FRAME_INTERVAL_MS);
-        }
-
-        function stopFrameCapture() {
-            clearInterval(frameHandle);
-        }
-
-        async function analyzeCurrentFrame() {
-            if (!recording || !sessionId) return;
-            const vid = document.getElementById("camera-video");
-            if (!vid.videoWidth) return;
-            const w = 320, h = Math.round(vid.videoHeight * (w / vid.videoWidth));
-            frameCanvas.width = w; frameCanvas.height = h;
-            frameCtx.drawImage(vid, 0, 0, w, h);
-            const dataUrl = frameCanvas.toDataURL("image/jpeg", 0.7);
-            try {
-                const { emotion } = await window.api.analyzeFrame(sessionId, dataUrl, timerSecs * 1000);
-                if (emotion in EMOTION_COUNTS) EMOTION_COUNTS[emotion]++;
-                renderEmotionTracker();
-            } catch (err) { console.warn("[DeepFace] frame error:", err.message); }
-        }
 
         function renderEmotionTracker() {
             const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0) || 1;
@@ -917,7 +891,6 @@
                     return;
                 }
                 startTimer();
-                startFrameCapture();
                 startTranscriptPoll();
                 toast("Session started!", "success");
 
@@ -928,7 +901,6 @@
                 stopTimer();
                 document.getElementById("rec-btn").disabled = true;
                 document.getElementById("rec-status-text").textContent = "Finishing transcription…";
-                stopFrameCapture();
                 stopTranscriptPoll();
                 await stopCamera();
 
@@ -938,20 +910,19 @@
                 document.getElementById("rec-btn-text").textContent = "Start Recording";
                 document.getElementById("rec-status-text").textContent = "Session ended";
 
-                // Compute sentiment: blend MorphCast valence avg with DeepFace counts
-                const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0) || 1;
-                const deepFaceScore = ((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged) / total) * 2 - 1;
-                // If MorphCast ran, use its valence (0-100 → -1..1); otherwise fall back to DeepFace counts
+                // Compute session scores from MorphCast readings only
+                const total = Object.values(EMOTION_COUNTS).reduce((a, b) => a + b, 0);
+                // No model readings means unavailable, not a fabricated negative score.
                 const posScore = mcValenceAvg !== null
                     ? parseFloat(((mcValenceAvg - 50) / 50).toFixed(2))
-                    : parseFloat(deepFaceScore.toFixed(2));
-                const engagement = Math.round(((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged + EMOTION_COUNTS.neutral * 0.5) / total) * 100);
+                    : null;
+                const engagement = total ? Math.round(((EMOTION_COUNTS.happy + EMOTION_COUNTS.engaged + EMOTION_COUNTS.neutral * 0.5) / total) * 100) : null;
 
                 try {
                     const notes = document.getElementById("quick-notes").value || "Session completed.";
                     await api.endSession(sessionId, {
                         summary: notes,
-                        overall_sentiment: parseFloat(posScore.toFixed(2)),
+                        overall_sentiment: posScore,
                         engagement_score: engagement,
                     });
 

@@ -202,7 +202,7 @@
                             </svg>
                         </div>
                         <div class="stat-card__value" id="m-deepface">—</div>
-                        <div class="stat-card__label">DeepFace Samples</div>
+                        <div class="stat-card__label">Emotion Samples</div>
                     </div>
                 </div>
 
@@ -236,7 +236,7 @@
                         <div class="card">
                             <div class="card__title" style="margin-bottom:16px">Emotion Breakdown</div>
                             <div id="emotion-breakdown">
-                                <div style="color:var(--text-muted);font-size:12px">No DeepFace data yet</div>
+                                <div style="color:var(--text-muted);font-size:12px">No emotion data yet</div>
                             </div>
                         </div>
 
@@ -308,16 +308,16 @@
                 // Metrics
                 const { label, cls } = sentimentLabel(session.overall_sentiment);
                 const sentEl = document.getElementById("m-sentiment");
-                sentEl.textContent = label;
+                sentEl.textContent = session.overall_sentiment == null ? "Unavailable" : label;
                 sentEl.className = `stat-card__value ${cls === "positive" ? "" : cls === "negative" ? "" : ""}`;
                 sentEl.style.color = cls === "positive" ? "var(--positive)" : cls === "negative" ? "var(--negative)" : "";
-                document.getElementById("m-engagement").textContent = session.engagement_score ? Math.round(session.engagement_score) + "%" : "—";
+                document.getElementById("m-engagement").textContent = session.engagement_score != null ? Math.round(session.engagement_score) + "%" : "—";
                 document.getElementById("m-transcript").textContent = insights.transcript_chunks;
-                document.getElementById("m-deepface").textContent = insights.deepface_samples;
+                document.getElementById("m-deepface").textContent = insights.emotion_samples ?? insights.deepface_samples;
 
                 // Sentiment bar (map -1→1 to 0→100%)
                 const pct = Math.round(((session.overall_sentiment + 1) / 2) * 100);
-                document.getElementById("sent-bar").style.width = pct + "%";
+                document.getElementById("sent-bar").style.width = session.overall_sentiment == null ? "0%" : pct + "%";
 
                 // Emotion breakdown
                 const breakdown = insights.emotion_breakdown || {};
@@ -359,7 +359,8 @@
                         const label = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
                         const isDeepFace = e.source === "deepface";
-                        const cls = isDeepFace ? "deepface" : "transcript";
+                        const isEmotion = isDeepFace || e.source === "morphcast";
+                        const cls = isEmotion ? "deepface" : "transcript";
                         const src = isDeepFace ? "DeepFace" : (e.source === "elevenlabs" ? "AI Transcript" : "MorphCast");
 
                         const isSeller = (e.speaker || "").toLowerCase() === "seller" || (e.speaker || "").toLowerCase() === "rep";
@@ -369,7 +370,7 @@
                             speakerLabel = session.client_name.toUpperCase();
                         }
 
-                        const body = isDeepFace
+                        const body = isEmotion
                             ? `<div>${e.emotion || "?"} ${e.valence != null ? `(${e.valence > 0 ? "+" : ""}${e.valence.toFixed(2)})` : ""}</div>`
                             : `<div>${e.speaker ? `<span class="timeline-event__speaker" style="color:${speakerColor};font-weight:700">${speakerLabel} · </span>` : ""}${e.text || ""}</div>`;
 
@@ -407,8 +408,8 @@
                 tips.push({ icon: "😴", bg: "rgba(234,179,8,0.1)", text: `<strong>Low engagement (${Math.round(session.engagement_score)}%)</strong> — consider a shorter, more focused pitch next time.` });
             }
 
-            if (insights.deepface_samples === 0) {
-                tips.push({ icon: "📷", bg: "rgba(100,100,100,0.1)", text: `<strong>No DeepFace data</strong> — connect the camera feed to start capturing facial emotion data.` });
+            if ((insights.emotion_samples ?? insights.deepface_samples) === 0) {
+                tips.push({ icon: "📷", bg: "rgba(100,100,100,0.1)", text: `<strong>No emotion data</strong> — check camera permissions and the MorphCast license.` });
             }
 
             if (insights.transcript_chunks === 0) {
