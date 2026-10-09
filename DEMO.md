@@ -11,6 +11,8 @@
 
 Hosted app: https://victorjimenez3.github.io/SenseLense/
 
+Fresh visitors enter automatically as Demo Visitor; Tim needs no account or credentials. The profile screen is optional personalization.
+
 Open it five minutes before the interview. Check https://senselense-deepface.onrender.com/api/health until `deepface_ready` is true. Settings → Backend URL should be blank (automatic Render default) or `https://senselense-deepface.onrender.com`. Hard refresh if old scripts are cached.
 
 Local, from this existing checkout:
@@ -31,6 +33,7 @@ Tests:
 backend/venv/bin/python -m pytest backend/tests -q
 node frontend/tests/recording.test.cjs
 node frontend/tests/morphcast.test.cjs
+node frontend/tests/public-demo.test.cjs
 ```
 
 ## C. Demo data

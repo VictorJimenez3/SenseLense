@@ -1,15 +1,18 @@
 /*!
  * auth.js — SenseLense Employee Auth
- * - Redirects to login.html if not signed in
+ * - Creates a local visitor profile for public demo access
  * - Injects the "logged in as" widget into every sidebar footer
  */
 (function () {
-    const raw = localStorage.getItem('sl-user');
+    let raw = localStorage.getItem('sl-user');
 
-    /* ── 1. Guard: redirect to login if not authed ────────────── */
+    /* Public demo: a profile personalizes the UI; it is not authentication. */
     if (!raw) {
-        window.location.replace('login.html');
-        return; // stop all further execution on this page
+        raw = JSON.stringify({
+            name: 'Demo Visitor', role: 'Public demo', initials: 'DV',
+            color: '#CC0000', avatar: null
+        });
+        localStorage.setItem('sl-user', raw);
     }
 
     const user = JSON.parse(raw);
