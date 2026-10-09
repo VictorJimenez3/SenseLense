@@ -2,9 +2,9 @@
 
 ## A. What works / what was fixed
 
-- Browser verified: dashboard totals/navigation, client creation, Sessions search, sample detail, transcript/emotion timeline and synthetic disclosure. Live camera + microphone permission flow creates and ends a session; Render stored actual DeepFace camera samples.
-- Backend tests cover CRUD, event ingestion, insights, frame errors, transcription mapping, missing credentials, summary deadline and repeatable seed preservation. Recorder tests cover chunk offsets, final upload completion and MorphCast shutdown.
-- Fixed: destructive random seed, old Settings backend URL, ten-second transcription timestamp shift, summary starting before final audio completes, silent transcription errors, fake neutral samples on DeepFace errors, and missing summary deadline/404 handling.
+- Browser verified: dashboard totals/navigation, client creation, Sessions search, sample detail, transcript/emotion timeline and synthetic disclosure. A separate Chrome profile entered as Demo Visitor without setup; tutorial Next/Finish controls were exercised. Cloud browser was unavailable. Live camera + microphone permission flow creates and ends a session; Render stored actual DeepFace camera samples. The real model also recognized a known face image and skipped an empty frame.
+- Backend tests cover CRUD, event ingestion, insights, frame errors, transcription mapping, missing credentials, summary deadline and repeatable seed preservation. The live summary failure returned in 44.7 seconds and preserved the saved notes/events. Recorder tests cover chunk offsets, final upload completion and MorphCast shutdown.
+- Fixed: destructive random seed, old Settings backend URL, ten-second transcription timestamp shift, summary starting before final audio completes, silent transcription errors, fake neutral samples on DeepFace errors, emotion analysis of frames with no face, and missing summary deadline/404 handling.
 - **Unresolved external services:** Gemini generation/transcription timed out tonight through Render and directly. A successful live transcript/summary is NOT verified. MorphCast rejects the existing license. DeepFace works independently. These failures are reported; synthetic results are never substituted into a live session.
 
 ## B. Run it
@@ -23,7 +23,7 @@ cd /Users/victor/SenseLense
 ./run.sh
 ```
 
-Open http://localhost:8080/login.html. Flask runs on 5050. If either port is already occupied, stop your previous app run first; don't start two copies. Ctrl-C stops a new run. The existing Python 3.12 virtualenv is installed. On a fresh checkout: `./setup.sh --seed`, then `./run.sh`.
+Open http://localhost:8080/. Flask runs on 5050 with local debug reload, so Python edits are picked up during practice. If either port is already occupied, stop your previous app run first; don't start two copies. Ctrl-C stops a new run. The existing Python 3.12 virtualenv is installed. On a fresh checkout: `./setup.sh --seed`, then `./run.sh`.
 
 `backend/.env` is ignored and contains the provided temporary Gemini key locally; Render has it as an environment secret. No ElevenLabs key is configured. When Gemini is available it handles audio and summaries; adding a valid ElevenLabs key selects its transcription path. Neither is required to review the sample or run DeepFace. Changing `.env` requires restarting Flask.
 
@@ -84,5 +84,5 @@ This is plain HTML/CSS/JavaScript, Flask and SQLite, not React. No separate rela
 - Gemini is configured but currently timing out; provider availability, free-tier limits and the temporary key can affect tomorrow. ElevenLabs path is tested with mocks, not live credentials. MorphCast attention/valence panels require a renewed license and are not verified live.
 - Render free tier sleeps with inactivity and has limited CPU/memory. Warm it before demonstrating; avoid redeploying mid-interview. Render deploys are manual; after a backend push use Manual Deploy → Deploy latest commit. GitHub Pages publishes automatically.
 - No video/audio playback is stored: only derived timestamped events. Speaker roles are assigned per audio chunk and can swap between chunks. Sentiment/engagement are simple heuristics.
-- Sign-in is a localStorage demo identity, not backend authentication. Use fictional contacts. Some CRUD input validation and error formatting remain basic.
+- The visitor/profile identity is localStorage personalization, not backend authentication. Use fictional contacts. Some CRUD input validation and error formatting remain basic.
 - No architecture rewrite, persistence service, paid upgrade or practice feature was added.

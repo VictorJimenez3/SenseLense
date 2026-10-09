@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 (
     cd "$ROOT_DIR/backend"
-    exec venv/bin/python -m flask run
+    exec venv/bin/python -m flask run --debug
 ) &
 BACKEND_PID=$!
 
@@ -21,5 +21,5 @@ cleanup() {
 }
 
 trap cleanup INT TERM
-echo "SenseLense is running at http://localhost:8080/login.html"
+echo "SenseLense is running at http://localhost:8080/"
 wait

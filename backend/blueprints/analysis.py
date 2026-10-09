@@ -82,7 +82,7 @@ def _run_deepface(frame_bytes: bytes):
         result = DeepFace.analyze(
             img_path=frame,
             actions=['emotion'],
-            enforce_detection=False,
+            enforce_detection=True,
             silent=True,
             detector_backend='opencv',   # <-- MUCH faster than default mtcnn
         )
@@ -93,6 +93,8 @@ def _run_deepface(frame_bytes: bytes):
         valence = VALENCE_MAP.get(dominant, 0.0)
         return mapped, valence, dominant
     except Exception as e:
+        if isinstance(e, ValueError) and "Face could not be detected" in str(e):
+            return None, None, "no_face"
         print(f"[deepface] DeepFace error: {e}")
         raise RuntimeError("DeepFace analysis unavailable") from e
 
@@ -119,6 +121,8 @@ def analyze_frame(session_id):
     except Exception:
         future.cancel()
         return jsonify({"error": "DeepFace is busy or unavailable; try the next frame"}), 503
+    if raw == "no_face":
+        return jsonify({"error": "No face detected; frame skipped"}), 422
     if emotion is None:
         return jsonify({"error": "invalid image"}), 400
 

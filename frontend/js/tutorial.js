@@ -404,7 +404,7 @@
     {
       badge: 'Welcome',
       title: 'Welcome to SenseLense',
-      desc: 'SenseLense is your AI-powered sales conversation intelligence platform. It syncs facial emotion data from <strong>DeepFace</strong> and speech transcriptions from <strong>ElevenLabs</strong> into a unified timeline — giving you real insights after every meeting.',
+      desc: 'SenseLense is your AI-powered sales conversation intelligence platform. It syncs facial emotion data from <strong>DeepFace</strong> and speech transcriptions from <strong>Gemini or ElevenLabs</strong> into a unified timeline — giving you real insights after every meeting.',
       illustration: `
         <div class="il-welcome">
           <div class="rings">
@@ -418,7 +418,7 @@
     {
       badge: 'Step 1 of 7 — Dashboard',
       title: 'Your Dashboard at a Glance',
-      desc: 'The <strong>Dashboard</strong> is your home base. It shows total clients, sessions recorded, average emotional sentiment, and engagement score — all updated in real-time as your session data comes in.',
+      desc: 'The <strong>Dashboard</strong> is your home base. It shows total clients, sessions recorded, average emotional sentiment, and engagement score — computed from saved session data.',
       illustration: `
         <div class="il-dashboard">
           <div class="il-bar"></div><div class="il-bar"></div><div class="il-bar"></div>
@@ -428,7 +428,7 @@
     {
       badge: 'Step 2 of 7 — Clients',
       title: 'Manage Your Contacts',
-      desc: 'The <strong>Clients</strong> section stores everyone you sell to. Each client has a profile showing their session history, average sentiment score, and engagement trend over time.',
+      desc: 'The <strong>Clients</strong> section stores everyone you sell to. Each client has a profile showing their saved session history.',
       illustration: `
         <div class="il-clients">
           <div class="il-avatar">JD</div>
@@ -489,7 +489,7 @@
     {
       badge: 'Step 6 of 7 — AI Insights',
       title: 'Actionable Insights After Each Call',
-      desc: 'When a session ends, SenseLense calculates <strong>average valence</strong>, <strong>emotion breakdown</strong>, and <strong>engagement score</strong>. The insights endpoint is ready to be wired to an LLM for richer AI-generated coaching notes.',
+      desc: 'When a session ends, SenseLense calculates <strong>average valence</strong>, <strong>emotion breakdown</strong>, and <strong>engagement score</strong>. When configured and available, Gemini combines the transcript and estimated emotions into follow-up notes.',
       illustration: `
         <div class="il-insights">
           <div class="il-insight-row"><div class="il-insight-fill" style="--w:75%"></div></div>
@@ -514,7 +514,7 @@
     {
       badge: "You're all set!",
       title: "Ready to SenseLense?",
-      desc: 'You now know everything! Add your first client, start a session, and let the AI do the rest. Good luck out there — your customers\' emotions don\'t lie.',
+      desc: 'You now know everything! Add your first client, start a session, and let the AI do the rest. Good luck out there — use facial estimates as context, not as proof of intent.',
       illustration: `
         <div class="il-done">
           ${Array.from({ length: 20 }, (_, i) => {

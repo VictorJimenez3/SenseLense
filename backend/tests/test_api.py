@@ -223,7 +223,7 @@ def test_analyze_frame_validation(client, seeded):
     assert "invalid image" in response.get_json()["error"]
 
 
-def test_analyze_frame_real_jpeg(client, seeded):
+def test_analyze_frame_real_jpeg_without_face(client, seeded):
     success, encoded = cv2.imencode(
         ".jpg",
         np.full((64, 64, 3), 128, dtype=np.uint8),
@@ -236,21 +236,12 @@ def test_analyze_frame_real_jpeg(client, seeded):
         json={"frame": frame, "timestamp_ms": 1000},
     )
 
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["emotion"] in {"happy", "engaged", "neutral", "confused", "negative"}
-    assert isinstance(data["valence"], float)
-
-    deadline = time.monotonic() + 2
-    insights = None
-    while time.monotonic() < deadline:
-        insights = client.get(
-            f"/api/sessions/{seeded['session_id']}/insights"
-        ).get_json()
-        if insights["deepface_samples"] == 3:
-            break
-        time.sleep(0.1)
-    assert insights["deepface_samples"] == 3
+    assert response.status_code == 422
+    assert "No face" in response.get_json()["error"]
+    insights = client.get(
+        f"/api/sessions/{seeded['session_id']}/insights"
+    ).get_json()
+    assert insights["deepface_samples"] == 2
 
 
 def test_summary_requires_gemini_key(client, seeded):
@@ -303,3 +294,17 @@ def test_summary_model_call_has_deadline(client, seeded, monkeypatch):
 
 def test_summary_unknown_session_returns_404(client):
     assert client.post('/api/sessions/999/summary/generate').status_code == 404
+
+
+def test_no_face_is_skipped_instead_of_stored_as_emotion(client, seeded, monkeypatch):
+    from deepface import DeepFace
+    def no_face(**kwargs):
+        if kwargs.get('enforce_detection'):
+            raise ValueError('Face could not be detected. Please confirm that the picture is a face photo')
+        return [{'dominant_emotion': 'neutral'}]
+    monkeypatch.setattr(DeepFace, 'analyze', no_face)
+    _, image = cv2.imencode('.jpg', np.zeros((64, 64, 3), dtype=np.uint8))
+    response = client.post(f"/api/analyze-frame/{seeded['session_id']}",
+                           json={'frame': base64.b64encode(image).decode(), 'timestamp_ms': 4000})
+    assert response.status_code == 422
+    assert client.get(f"/api/sessions/{seeded['session_id']}/insights").get_json()['deepface_samples'] == 2
